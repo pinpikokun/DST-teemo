@@ -1,11 +1,7 @@
-local AGGRO_DAMAGE = 1      -- アグロ発生用の初撃ダメージ
-local DOT_DAMAGE = 50       -- 1tick あたりのダメージ
-local DOT_DAMAGE_PVP = 25   -- PvP時は半分
-local DOT_TICKS = 4         -- 合計4tick（50×4=200、PvP: 25×4=100）
-
 local Explosive_Noxious_Trap = Class(function(self,inst)
     self.inst = inst
-    self.explosiveRange = 5
+    self.explosiveRange = 4
+    self.explosiveDamage = 50
     self.deployer = nil
 end)
 
@@ -19,8 +15,8 @@ local function doEndTask(v)
         v.noxiousTrapEndTask:Cancel()
     end
 
-    v.noxiousTrapEndTask = v:DoTaskInTime(DOT_TICKS + 0.5, function(v)
-        if v.components.locomotor ~= nil and v._noxiousTrapSlowAmount ~= nil then
+    v.noxiousTrapEndTask = v:DoTaskInTime(4.0, function(v)
+        if v.components.locomotor ~= nil then
             v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + v._noxiousTrapSlowAmount
             v._noxiousTrapSlowAmount = nil
         end
@@ -33,10 +29,6 @@ end
 
 local function doSlow(v)
     if v.components.locomotor then
-        -- 既存のスローがあれば先に戻す
-        if v._noxiousTrapSlowAmount ~= nil then
-            v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + v._noxiousTrapSlowAmount
-        end
         local slowAmount = v.components.locomotor.runspeed * -0.5
         v._noxiousTrapSlowAmount = slowAmount
         v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + slowAmount
@@ -89,41 +81,50 @@ function Explosive_Noxious_Trap:OnBurnt()
 
                 if not v:HasTag(nonTarget) and not v:HasTag("companion") then
 
-                    -- アグロを発生させる（ターゲット帰属用）
-                    v.components.combat:GetAttacked(counterPlayer, AGGRO_DAMAGE)
+                    -- 初撃ダメージ（GetAttackedで実ダメージ適用）
+                    v.components.combat:GetAttacked(counterPlayer, self.explosiveDamage, nil)
 
-                    -- GetAttackedで死亡した場合はスキップ
-                    if v:IsValid() and v.components.health ~= nil
-                        and not v.components.health:IsDead() then
+                    if v.components.health and v.noxiousTrapDamageTask == nil then
 
-                        if v.noxiousTrapDamageTask == nil then
-                            local dmg = DOT_DAMAGE
-                            if v:HasTag("player") then dmg = DOT_DAMAGE_PVP end
+                        -- 毒の効果（1秒毎
+                        v.noxiousTrapDamageTask = v:DoPeriodicTask(1.0, function()
 
-                            -- DOT（毎秒dmgダメージ × DOT_TICKS回）
-                            local ticks = 0
-                            v.noxiousTrapDamageTask = v:DoPeriodicTask(1.0, function()
-                                ticks = ticks + 1
-
-                                if ticks > DOT_TICKS or not v:IsValid()
-                                    or v.components.health == nil or v.components.health.currenthealth <= 0 then
-                                    if v.noxiousTrapDamageTask ~= nil then
-                                        v.noxiousTrapDamageTask:Cancel()
-                                        v.noxiousTrapDamageTask = nil
-                                    end
-                                    return
+                            -- ヘルスが無い場合はタスクをキャンセル
+                            if v.components.health == nil or v.components.health.currenthealth <= 0 then
+                                if v.noxiousTrapDamageTask ~= nil then
+                                    v.noxiousTrapDamageTask:Cancel()
+                                    v.noxiousTrapDamageTask = nil
                                 end
+                                return
+                            end
 
-                                toxicEffect(v)
-                                v.components.health:DoDelta(-dmg, nil, "noxiousTrap")
-                                if v.HUD then v.HUD.bloodover:Flash() end
+                            -- 毒エフェクト
+                            toxicEffect(v)
 
-                            end)
-                        end
+                            -- ダメージ
+                            local dmg = self.explosiveDamage
+                            if v:HasTag("smallcreature") then
+                                dmg = self.explosiveDamage * 0.75
+                            end
+                            if v:HasTag("largecreature") then
+                                dmg = self.explosiveDamage * 1.75
+                            end
+                            if v:HasTag("monster") then
+                                dmg = self.explosiveDamage * 1.75
+                            end
+                            if v:HasTag("player") then
+                                dmg = self.explosiveDamage * 0.35
+                            end
 
-                        doSlow(v)
-                        doEndTask(v)
+                            v.components.health:DoDelta(-dmg, nil, "noxiousTrap")
+                            -- プレーヤーの場合画面が赤くなるやつ（PVP用)
+                            if v.HUD then v.HUD.bloodover:Flash() end
+
+                        end)
                     end
+
+                    doSlow(v)
+                    doEndTask(v)
                 end
             end
         end

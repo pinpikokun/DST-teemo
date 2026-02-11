@@ -9,13 +9,6 @@ local assets=
 	Asset("ATLAS", "images/inventoryimages/noxious_trap.xml"),
 }
 
-local function stopSearchTask(inst)
-    if inst.searchTask ~= nil then
-        inst.searchTask:Cancel()
-        inst.searchTask = nil
-    end
-end
-
 local function explodeTrap(inst, target)
 	-- local pos = Vector3(inst.Transform:GetWorldPosition())
 
@@ -172,6 +165,13 @@ local function findTarget(inst)
 		    	end
 	    	end
 
+    end
+end
+
+local function stopSearchTask(inst)
+    if inst.searchTask ~= nil then
+        inst.searchTask:Cancel()
+        inst.searchTask = nil
     end
 end
 
