@@ -47,7 +47,7 @@ function Explosive_Noxious_Trap:OnBurnt()
     local x, y, z = self.inst.Transform:GetWorldPosition()
 
     local counterList = TheSim:FindEntities(x, y, z, self.explosiveRange*5)
-    local counterPlayer = self.inst
+    local counterPlayer = nil
         for k, v in pairs(counterList) do
         if v:HasTag("player") then
             counterPlayer = v
@@ -80,8 +80,12 @@ function Explosive_Noxious_Trap:OnBurnt()
                         -- 毒の効果（1秒毎
                         v.noxiousTrapDamageTask = v:DoPeriodicTask(1.0, function()
 
-                            -- ヘルスが無い場合は何もしない
-                            if v.components.health.currenthealth <= 0 then
+                            -- ヘルスが無い場合はタスクをキャンセル
+                            if v.components.health == nil or v.components.health.currenthealth <= 0 then
+                                if v.noxiousTrapDamageTask ~= nil then
+                                    v.noxiousTrapDamageTask:Cancel()
+                                    v.noxiousTrapDamageTask = nil
+                                end
                                 return
                             end
 

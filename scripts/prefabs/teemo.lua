@@ -185,8 +185,12 @@ local function toxicShot(inst, data)
             -- 毒の効果（1秒毎
             target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
 
-                -- ヘルスが無い場合は何もしない
-                if target.components.health.currenthealth <= 0 then
+                -- ヘルスが無い場合はタスクをキャンセル
+                if target.components.health == nil or target.components.health.currenthealth <= 0 then
+                    if target.toxicShotDamageTask ~= nil then
+                        target.toxicShotDamageTask:Cancel()
+                        target.toxicShotDamageTask = nil
+                    end
                     return
                 end
 

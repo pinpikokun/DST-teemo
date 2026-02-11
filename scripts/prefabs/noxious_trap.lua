@@ -227,11 +227,11 @@ local function fn(Sim)
 	inst.AnimState:SetBuild("noxious_trap")
 	inst.AnimState:PlayAnimation("idle")
 
+	inst.entity:SetPristine()
+
     if not TheWorld.ismastersim then
         return inst
     end
-	
-	inst.entity:SetPristine()
 
 	inst:AddComponent("inspectable")
 
