@@ -46,9 +46,9 @@ local function doBlindEffectEndTask(target)
 
     target.blindEffectEndTask = target:DoTaskInTime(time, function(target)
         if target.blindEffect ~= nil then
-            if target.blindEffect.kill_fx then
+            if target.blindEffect:IsValid() and target.blindEffect.kill_fx then
                 target.blindEffect:kill_fx()
-            else
+            elseif target.blindEffect:IsValid() then
                 target.blindEffect:Remove()
             end
             target.blindEffect = nil
@@ -102,7 +102,7 @@ local function doToxicShot(target)
         return
     end
 
-    -- 毒DOT（毎秒6ダメージ、4秒間）
+    -- 毒DOT（毎秒5ダメージ、4秒間）
     target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
         if not target:IsValid() or target.components.health == nil or target.components.health.currenthealth <= 0 then
             if target.toxicShotDamageTask ~= nil then
