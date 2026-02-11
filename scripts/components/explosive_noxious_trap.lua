@@ -2,8 +2,12 @@ local Explosive_Noxious_Trap = Class(function(self,inst)
     self.inst = inst
     self.explosiveRange = 4
     self.explosiveDamage = 50
-    -- self.explosiveTime = 4
+    self.deployer = nil
 end)
+
+function Explosive_Noxious_Trap:SetDeployer(deployer)
+    self.deployer = deployer
+end
 
 local function doEndTask(v)
 
@@ -13,7 +17,8 @@ local function doEndTask(v)
 
     v.noxiousTrapEndTask = v:DoTaskInTime(4.0, function(v)
         if v.components.locomotor ~= nil then
-            v.components.locomotor.bonusspeed = 0
+            v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + v._noxiousTrapSlowAmount
+            v._noxiousTrapSlowAmount = nil
         end
         if v.noxiousTrapDamageTask ~= nil then
             v.noxiousTrapDamageTask:Cancel()
@@ -24,7 +29,9 @@ end
 
 local function doSlow(v)
     if v.components.locomotor then
-        v.components.locomotor.bonusspeed = v.components.locomotor.runspeed * -0.5
+        local slowAmount = v.components.locomotor.runspeed * -0.5
+        v._noxiousTrapSlowAmount = slowAmount
+        v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + slowAmount
     end
 end
 
@@ -46,12 +53,16 @@ function Explosive_Noxious_Trap:OnBurnt()
 
     local x, y, z = self.inst.Transform:GetWorldPosition()
 
-    local counterList = TheSim:FindEntities(x, y, z, self.explosiveRange*5)
-    local counterPlayer = nil
+    -- 設置者を攻撃帰属先として使用。nilの場合は近くのteemoプレイヤーを探す
+    local counterPlayer = self.deployer
+    if counterPlayer == nil or not counterPlayer:IsValid() then
+        counterPlayer = nil
+        local counterList = TheSim:FindEntities(x, y, z, self.explosiveRange * 5)
         for k, v in pairs(counterList) do
-        if v:HasTag("player") then
-            counterPlayer = v
-        break
+            if v:HasTag("teemo") then
+                counterPlayer = v
+                break
+            end
         end
     end
 
@@ -68,12 +79,10 @@ function Explosive_Noxious_Trap:OnBurnt()
         if not inpocket then
             if v.components.combat and v ~= self.inst then
 
-                if not v:HasTag(nonTarget) and not v:HasTag("companion") then --and v.entity:IsVisible() and not v:HasTag("notraptrigger") then
+                if not v:HasTag(nonTarget) and not v:HasTag("companion") then
 
-                    -- ダメージ
-                     -- v.components.combat:GetAttacked(counterPlayer, 1 , nil)
-                    -- ダメージモーション
-                    v:PushEvent("attacked", {attacker = counterPlayer, damage = self.explosiveDamage, weapon = nil})
+                    -- 初撃ダメージ（GetAttackedで実ダメージ適用）
+                    v.components.combat:GetAttacked(counterPlayer, self.explosiveDamage, nil)
 
                     if v.components.health and v.noxiousTrapDamageTask == nil then
 

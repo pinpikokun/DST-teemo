@@ -165,7 +165,7 @@ local function findTarget(inst)
     end
 end
 
-function stopSearchTask(inst)
+local function stopSearchTask(inst)
     if inst.searchTask ~= nil then
         inst.searchTask:Cancel()
         inst.searchTask = nil
@@ -191,6 +191,9 @@ local function startTrap(inst)
 end
 
 local function onDeploy(inst, pt, deployer)
+	if deployer ~= nil and inst.components.explosive_noxious_trap ~= nil then
+		inst.components.explosive_noxious_trap:SetDeployer(deployer)
+	end
 	startTrap(inst)
 	inst.Physics:Teleport(pt:Get())
 end

@@ -155,14 +155,18 @@ end
 
 local function onLoad(inst, data)
     if data then
-        if data.idTraderEnabled then
-            inst.components.trader.enabled = data.idTraderEnabled
+        if data.isTraderEnabled ~= nil then
+            inst.components.trader.enabled = data.isTraderEnabled
+        end
+        if data.isBlowdartFinished then
+            onFinished(inst)
         end
     end
 end
 
 local function onSave(inst, data)
-    data.idTraderEnabled = inst.components.trader.enabled
+    data.isTraderEnabled = inst.components.trader.enabled
+    data.isBlowdartFinished = not inst:HasTag("blowdart")
 end
 
 local function fn(Sim)

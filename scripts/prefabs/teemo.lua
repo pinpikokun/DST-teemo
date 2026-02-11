@@ -91,8 +91,12 @@ end
 local function onAttacked(inst, data)
     disableCamouflage(inst)
     inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED
+    if inst.resetMoveQuickTask ~= nil then
+        inst.resetMoveQuickTask:Cancel()
+    end
     inst.resetMoveQuickTask = inst:DoTaskInTime(5.0, function(inst)
         inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * 1.26
+        inst.resetMoveQuickTask = nil
     end, inst)
 end
 
