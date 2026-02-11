@@ -1,3 +1,6 @@
+local MAX_TRAPS = 3
+local TRAP_LIFETIME = 300 -- 5分
+
 local assets=
 {
 	Asset("ANIM", "anim/noxious_trap.zip"),
@@ -130,9 +133,9 @@ local function explodeTrap(inst, target)
 end
 
 local function findTarget(inst)
-	-- 10分経過したら終了
+	-- 5分経過したら終了
 	inst.elapsed = inst.elapsed + .3
-	if inst.elapsed >= 600 then
+	if inst.elapsed >= TRAP_LIFETIME then
 	    stopSearchTask(inst)
 	    inst:Remove()
 	    return
@@ -191,9 +194,37 @@ local function startTrap(inst)
 end
 
 local function onDeploy(inst, pt, deployer)
-	if deployer ~= nil and inst.components.explosive_noxious_trap ~= nil then
-		inst.components.explosive_noxious_trap:SetDeployer(deployer)
+	if deployer ~= nil then
+		if inst.components.explosive_noxious_trap ~= nil then
+			inst.components.explosive_noxious_trap:SetDeployer(deployer)
+		end
+
+		-- 設置上限の管理
+		if deployer._noxiousTraps == nil then
+			deployer._noxiousTraps = {}
+		end
+
+		-- 無効になったトラップを除去
+		local validTraps = {}
+		for _, trap in ipairs(deployer._noxiousTraps) do
+			if trap:IsValid() then
+				table.insert(validTraps, trap)
+			end
+		end
+
+		-- 上限超過時は最も古いトラップを削除
+		while #validTraps >= MAX_TRAPS do
+			local oldest = table.remove(validTraps, 1)
+			if oldest:IsValid() then
+				stopSearchTask(oldest)
+				oldest:Remove()
+			end
+		end
+
+		table.insert(validTraps, inst)
+		deployer._noxiousTraps = validTraps
 	end
+
 	startTrap(inst)
 	inst.Physics:Teleport(pt:Get())
 end
