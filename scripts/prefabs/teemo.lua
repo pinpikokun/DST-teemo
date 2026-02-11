@@ -31,22 +31,24 @@ local function doCamouflage(inst)
         inst:AddTag("notarget")
         inst.AnimState:SetMultColour(.1,.1,.1,.5)
         inst.DynamicShadow:Enable(false)
-    end
 
-    local x,y,z = inst.Transform:GetWorldPosition() 
-    local ents = TheSim:FindEntities(x, y, z, 20)
-    for k,v in pairs(ents) do
-        if v.components.combat and v.components.combat.target == inst then
-            v.components.combat:BlankOutAttacks(.5)
+        -- ステルス突入時のみ、既にターゲットしている敵の攻撃を無効化
+        local x,y,z = inst.Transform:GetWorldPosition()
+        local ents = TheSim:FindEntities(x, y, z, 20)
+        for k,v in pairs(ents) do
+            if v.components.combat and v.components.combat.target == inst then
+                v.components.combat:BlankOutAttacks(.5)
+            end
         end
     end
 end
 
 local function updCamouflagePrm(inst)
-    local pos = Vector3(inst.Transform:GetWorldPosition())
-    inst.camouflage_p = pos
+    local x, _, z = inst.Transform:GetWorldPosition()
+    inst.camouflage_x = x
+    inst.camouflage_z = z
     inst.camouflage_t = GetTime()
-    inst.camouflage_h = inst.components.health.currenthealth
+    inst.camouflage_h = inst.components.health ~= nil and inst.components.health.currenthealth or 0
 end
 
 local function disableCamouflage(inst)
@@ -61,13 +63,21 @@ local function disableCamouflage(inst)
     inst.DynamicShadow:Enable(true)
 
     inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD - (TUNING.WILSON_ATTACK_PERIOD * 0.4)
-    inst:DoTaskInTime(3.0, function(inst)
+    if inst.resetAttackSpeedTask ~= nil then
+        inst.resetAttackSpeedTask:Cancel()
+    end
+    inst.resetAttackSpeedTask = inst:DoTaskInTime(3.0, function(inst)
         inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD
+        inst.resetAttackSpeedTask = nil
     end, inst)
 
 end
 
 local function checkCamouflage(inst)
+
+    if inst.components.sanity == nil or inst.components.health == nil then
+        return
+    end
 
     if inst.components.sanity:GetPercent() < .3 then
         disableCamouflage(inst)
@@ -79,9 +89,9 @@ local function checkCamouflage(inst)
         return
     end
 
-    local pos = Vector3(inst.Transform:GetWorldPosition())
+    local x, _, z = inst.Transform:GetWorldPosition()
     local running = inst.components.locomotor:WantsToRun()
-    if pos == inst.camouflage_p and not running then
+    if x == inst.camouflage_x and z == inst.camouflage_z and not running then
         if GetTime() - inst.camouflage_t > 2.0 then doCamouflage(inst) end
     else
         disableCamouflage(inst)
@@ -109,6 +119,11 @@ local function stopPassive(inst)
     if inst.resetMoveQuickTask ~= nil then
         inst.resetMoveQuickTask:Cancel()
         inst.resetMoveQuickTask = nil
+    end
+
+    if inst.resetAttackSpeedTask ~= nil then
+        inst.resetAttackSpeedTask:Cancel()
+        inst.resetAttackSpeedTask = nil
     end
 end
 
