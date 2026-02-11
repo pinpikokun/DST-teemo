@@ -46,33 +46,93 @@ local function doBlindEffectEndTask(target)
 
     target.blindEffectEndTask = target:DoTaskInTime(time, function(target)
         if target.blindEffect ~= nil then
-            target.blindEffect:Remove()
+            if target.blindEffect.kill_fx then
+                target.blindEffect:kill_fx()
+            else
+                target.blindEffect:Remove()
+            end
             target.blindEffect = nil
         end
-    end, target)
+        target.blindEffectEndTask = nil
+    end)
 end
 
 local function doBlind(target)
     if target.components.combat then
-        -- -- 標的を見失う
-        -- target.components.combat.target = nil
-        -- 2.5秒間攻撃できなくする
+        -- 2秒間攻撃できなくする
         target.components.combat:BlankOutAttacks(2.0)
     end
 end
 
+local function toxicEffect(target)
+    local size = 1
+    if target:HasTag("smallcreature") then
+        size = 0
+    elseif target:HasTag("largecreature") then
+        size = 2
+    end
+
+    local fx = SpawnPrefab("toxic_effect_by_teemo")
+    fx.entity:SetParent(target.entity)
+    fx.Transform:SetPosition(0, size, 0)
+end
+
+local function doToxicShotEndTask(target)
+    if target.toxicShotEndTask ~= nil then
+        target.toxicShotEndTask:Cancel()
+    end
+
+    target.toxicShotEndTask = target:DoTaskInTime(4.0, function(target)
+        if target.toxicShotDamageTask ~= nil then
+            target.toxicShotDamageTask:Cancel()
+            target.toxicShotDamageTask = nil
+        end
+        target.toxicShotEndTask = nil
+    end)
+end
+
+local function doToxicShot(target)
+    if not target.components.health or target.components.health.currenthealth <= 0 then
+        return
+    end
+
+    -- DOT発動中は効果延長のみ
+    if target.toxicShotDamageTask ~= nil then
+        doToxicShotEndTask(target)
+        return
+    end
+
+    -- 毒DOT（毎秒6ダメージ、4秒間）
+    target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
+        if not target:IsValid() or target.components.health == nil or target.components.health.currenthealth <= 0 then
+            if target.toxicShotDamageTask ~= nil then
+                target.toxicShotDamageTask:Cancel()
+                target.toxicShotDamageTask = nil
+            end
+            return
+        end
+
+        toxicEffect(target)
+        target.components.health:DoDelta(-5, nil, "toxicShot")
+        if target.HUD then target.HUD.bloodover:Flash() end
+    end)
+
+    doToxicShotEndTask(target)
+end
+
 local function onattack(inst, atker, target, skipsanity)
 
-    -- ブラインド効果は吹き矢攻撃の場合のみ
+    -- ブラインド効果・毒DOTは吹き矢攻撃の場合のみ
     if inst:HasTag("blowdart") then
 
+        doBlind(target)
+        doToxicShot(target)
+
         if target.blindEffect ~= nil then
-            doBlind(target)
             doBlindEffectEndTask(target)
             return
         end
 
-        doBlind(target)
         doBlindEffect(target)
         doBlindEffectEndTask(target)
 
@@ -113,9 +173,9 @@ local function fn(Sim)
     -- 武器
     inst:AddComponent("weapon")
     -- ダメージ
-    inst.components.weapon:SetDamage(10)
+    inst.components.weapon:SetDamage(20)
     -- 範囲（攻撃射程、ヒット射程）
-    inst.components.weapon:SetRange(4, 8)
+    inst.components.weapon:SetRange(8, 10)
     -- 攻撃効果
     inst.components.weapon:SetOnAttack(onattack)
     -- 吹き矢の矢を飛ばす見た目追加
