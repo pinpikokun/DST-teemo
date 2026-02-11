@@ -66,7 +66,7 @@ local function disableCamouflage(inst)
     if inst.resetAttackSpeedTask ~= nil then
         inst.resetAttackSpeedTask:Cancel()
     end
-    inst.resetAttackSpeedTask = inst:DoTaskInTime(3.0, function(inst)
+    inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
         inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD
         inst.resetAttackSpeedTask = nil
     end, inst)
@@ -92,7 +92,7 @@ local function checkCamouflage(inst)
     local x, _, z = inst.Transform:GetWorldPosition()
     local running = inst.components.locomotor:WantsToRun()
     if x == inst.camouflage_x and z == inst.camouflage_z and not running then
-        if GetTime() - inst.camouflage_t > 2.0 then doCamouflage(inst) end
+        if GetTime() - inst.camouflage_t > 1.5 then doCamouflage(inst) end
     else
         disableCamouflage(inst)
     end
