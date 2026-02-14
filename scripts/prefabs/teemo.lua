@@ -7,13 +7,11 @@ local assets = {
 }
 local prefabs = {}
 
+local NOXIOUS_TRAP_MAX_STACKS = GLOBAL.NOXIOUS_TRAP_MAX_STACKS
+local NOXIOUS_TRAP_INITIAL_STACKS = 3
+local NOXIOUS_TRAP_RECOVERY_INTERVAL = 30
+
 local start_inv = {
-    "red_cap",
-    "red_cap",
-    "red_cap",
-    "green_cap",
-    "blue_cap",
-    "noxious_trap",
     "blind_dart",
     -- "sewing_kit",
 --    "chester_eyebone",
@@ -133,16 +131,44 @@ local function startPassive(inst)
     inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * 1.26
 end
 
+local function stopNoxiousTrapRecovery(inst)
+    if inst._noxiousTrapRecoveryTask ~= nil then
+        inst._noxiousTrapRecoveryTask:Cancel()
+        inst._noxiousTrapRecoveryTask = nil
+    end
+end
+
+local function startNoxiousTrapRecovery(inst)
+    stopNoxiousTrapRecovery(inst)
+    inst._noxiousTrapTimer = inst._noxiousTrapTimer or 0
+    inst._noxiousTrapRecoveryTask = inst:DoPeriodicTask(1, function()
+        local stacks = inst._noxiousTrapStacks:value()
+        if stacks >= NOXIOUS_TRAP_MAX_STACKS then
+            inst._noxiousTrapTimer = 0
+            return
+        end
+        inst._noxiousTrapTimer = inst._noxiousTrapTimer + 1
+        if inst._noxiousTrapTimer >= NOXIOUS_TRAP_RECOVERY_INTERVAL then
+            inst._noxiousTrapTimer = 0
+            inst._noxiousTrapStacks:set(stacks + 1)
+        end
+    end)
+end
+
 local function onDeath(inst, data)
     inst.deathcause = data ~= nil and data.cause or "unknown"
     if inst.deathcause == "file_load" then return end
     stopPassive(inst)
+    stopNoxiousTrapRecovery(inst)
 end
 
 local common_postinit = function(inst)
 	inst.soundsname = "teemo"
 	inst.MiniMapEntity:SetIcon( "teemo.tex" )
     inst:AddTag("teemo")
+
+    -- ノクサストラップ スタック数ネットワーク変数（クライアント同期用）
+    inst._noxiousTrapStacks = net_byte(inst.GUID, "teemo._noxiousTrapStacks", "noxioustrapstacksdirty")
 
     -- 上向き攻撃時にblind_dartが体の下にはみ出る対策（クライアント側）
     inst._dartHiding = false
@@ -192,7 +218,36 @@ local master_postinit = function(inst)
     inst:ListenForEvent("onattackother", function() disableCamouflage(inst) end)
     inst:ListenForEvent("attacked", onAttacked)
     inst:ListenForEvent("death", onDeath)
-    inst:ListenForEvent("ms_respawnedfromghost", function() startPassive(inst) end)
+    inst:ListenForEvent("ms_respawnedfromghost", function()
+        startPassive(inst)
+        startNoxiousTrapRecovery(inst)
+    end)
+
+    -- ノクサストラップ スタック管理
+    inst._noxiousTrapStacks:set(NOXIOUS_TRAP_INITIAL_STACKS)
+    inst._noxiousTrapTimer = 0
+    startNoxiousTrapRecovery(inst)
+
+    -- セーブ/ロード
+    local _OnSave = inst.OnSave
+    inst.OnSave = function(inst, data)
+        if _OnSave then _OnSave(inst, data) end
+        data.noxious_trap_stacks = inst._noxiousTrapStacks:value()
+        data.noxious_trap_timer = inst._noxiousTrapTimer
+    end
+
+    local _OnLoad = inst.OnLoad
+    inst.OnLoad = function(inst, data)
+        if _OnLoad then _OnLoad(inst, data) end
+        if data then
+            if data.noxious_trap_stacks then
+                inst._noxiousTrapStacks:set(data.noxious_trap_stacks)
+            end
+            if data.noxious_trap_timer then
+                inst._noxiousTrapTimer = data.noxious_trap_timer
+            end
+        end
+    end
 
 end
 

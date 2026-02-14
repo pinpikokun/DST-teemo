@@ -1,3 +1,5 @@
+GLOBAL.NOXIOUS_TRAP_MAX_STACKS = 5
+
 local STRINGS = GLOBAL.STRINGS
 
 STRINGS.CHARACTER_TITLES.teemo = "Captain Teemo"
@@ -69,33 +71,27 @@ AddMinimapAtlas("images/map_icons/teemo.xml")
 -- アイテムの名前 item name
 STRINGS.NAMES.BLIND_DART = "Blind Dart"
 
--- @@ RECIPE @@ --
--- レシピの名前 recipe name
+-- アイテムの名前 item name
 STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"
--- レシピの説明 recipe note
-STRINGS.RECIPE_DESC.NOXIOUS_TRAP = "Mushroom Trap"
 
-local teemoTab = AddRecipeTab(
-    "Teemo Items" -- rec_str
-    ,998 -- rec_sort
-    ,GLOBAL.resolvefilepath("images/hud/teemotab.xml") -- rec_atlas
-    ,"teemotab.tex" -- rec_icon
-    ,"teemo" -- rec_owner_tag
-    )
+-- ノクサストラップ スタック消費RPC
+AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
+    if player:HasTag("teemo")
+        and player._noxiousTrapStacks
+        and player._noxiousTrapStacks:value() > 0
+        and player.components.inventory then
+        player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
+        local trap = GLOBAL.SpawnPrefab("noxious_trap")
+        player.components.inventory:GiveItem(trap)
+    end
+end)
 
-local noxious_trap = AddRecipe(
-    "noxious_trap" -- name
-    ,{GLOBAL.Ingredient("red_cap", 1)} -- ingredients
-    ,teemoTab -- tab
-    ,GLOBAL.TECH.NONE -- level
-    ,nil -- placer
-    ,nil -- min_spacing
-    ,nil -- nounlock
-    ,nil -- numtogive
-    ,"teemo" -- builder_tag
-    ,GLOBAL.resolvefilepath("images/inventoryimages/noxious_trap.xml") -- atlas
-    --,"noxious_trap.tex" -- image (name + .tex)
-    --, -- lockedatlas
-    --, -- lockedimage
-    )
+-- テーモ用HUDバッジ（ノクサストラップ スタック数表示）
+AddClassPostConstruct("widgets/statusdisplays", function(self)
+    if self.owner and self.owner:HasTag("teemo") then
+        local NoxiousTrapBadge = require("widgets/noxioustrap_badge")
+        self.noxioustrapbadge = self:AddChild(NoxiousTrapBadge(self.owner))
+        self.noxioustrapbadge:SetPosition(-40, -120, 0)
+    end
+end)
 
