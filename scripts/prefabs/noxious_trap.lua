@@ -9,6 +9,10 @@ local assets=
 	Asset("ATLAS", "images/inventoryimages/noxious_trap.xml"),
 }
 
+local DETECT_RADIUS = 3.0
+local DETECT_CANTTAGS = {"companion"}
+local DETECT_MUSTONETAGS = {"monster", "character", "animal", "shadowcreature", "largecreature", "smallcreature", "insect"}
+
 local function explodeTrap(inst, target)
 	-- local pos = Vector3(inst.Transform:GetWorldPosition())
 
@@ -132,6 +136,13 @@ local function explodeTrap(inst, target)
 
 end
 
+local function stopSearchTask(inst)
+    if inst.searchTask ~= nil then
+        inst.searchTask:Cancel()
+        inst.searchTask = nil
+    end
+end
+
 local function findTarget(inst)
 	-- 5分経過したら終了
 	inst.elapsed = inst.elapsed + .3
@@ -143,35 +154,16 @@ local function findTarget(inst)
 
 	-- 爆発の対象
     local x, y, z = inst.Transform:GetWorldPosition()
-    local ents = TheSim:FindEntities(x, y, z, 2.0)
+    local ents = TheSim:FindEntities(x, y, z, DETECT_RADIUS, nil, DETECT_CANTTAGS, DETECT_MUSTONETAGS)
+
+    -- playerは爆発対象外
+    local nonTarget = TheNet:GetPVPEnabled() and "teemo" or "player"
     for k, v in pairs(ents) do
-
-	    	if v:HasTag("monster") or v:HasTag("character")
-	    		or v:HasTag("animal") or v:HasTag("shadowcreature")
-	    		or v:HasTag("largecreature") or v:HasTag("smallcreature")
-	    		or v:HasTag("insect") then
-
-	    		-- playerは爆発対象外
-	    		local nonTarget = "player"
-	    		if TheNet:GetPVPEnabled() then
-	    			nonTarget = "teemo"
-	    		end
-
-		    	if not v:HasTag(nonTarget) and not v:HasTag("companion") then--and v.entity:IsVisible() and not v:HasTag("notraptrigger") then
-		    		stopSearchTask(inst)
-		    		explodeTrap(inst, v)
-		    		-- inst:Remove()
-		    		break
-		    	end
-	    	end
-
-    end
-end
-
-local function stopSearchTask(inst)
-    if inst.searchTask ~= nil then
-        inst.searchTask:Cancel()
-        inst.searchTask = nil
+    	if not v:HasTag(nonTarget) then
+    		stopSearchTask(inst)
+    		explodeTrap(inst, v)
+    		break
+    	end
     end
 end
 
