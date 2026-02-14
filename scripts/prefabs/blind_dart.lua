@@ -37,7 +37,7 @@ local function doBlindEffectEndTask(target)
         target.blindEffectEndTask:Cancel()
     end
 
-    local time = 2.5
+    local time = 2.0
     if target.components.health then
         if target.components.health.currenthealth <= 0 then
             time = 0.5
@@ -46,127 +46,98 @@ local function doBlindEffectEndTask(target)
 
     target.blindEffectEndTask = target:DoTaskInTime(time, function(target)
         if target.blindEffect ~= nil then
-            target.blindEffect:Remove()
+            if target.blindEffect.kill_fx then
+                target.blindEffect:kill_fx()
+            else
+                target.blindEffect:Remove()
+            end
             target.blindEffect = nil
         end
-    end, target)
+        target.blindEffectEndTask = nil
+    end)
 end
 
 local function doBlind(target)
     if target.components.combat then
-        -- -- 標的を見失う
-        -- target.components.combat.target = nil
-        -- 2.5秒間攻撃できなくする
-        target.components.combat:BlankOutAttacks(2.5)
+        -- 2秒間攻撃できなくする
+        target.components.combat:BlankOutAttacks(2.0)
     end
+end
+
+local function toxicEffect(target)
+    local size = 1
+    if target:HasTag("smallcreature") then
+        size = 0
+    elseif target:HasTag("largecreature") then
+        size = 2
+    end
+
+    local fx = SpawnPrefab("toxic_effect_by_teemo")
+    fx.entity:SetParent(target.entity)
+    fx.Transform:SetPosition(0, size, 0)
+end
+
+local function doToxicShotEndTask(target)
+    if target.toxicShotEndTask ~= nil then
+        target.toxicShotEndTask:Cancel()
+    end
+
+    target.toxicShotEndTask = target:DoTaskInTime(4.0, function(target)
+        if target.toxicShotDamageTask ~= nil then
+            target.toxicShotDamageTask:Cancel()
+            target.toxicShotDamageTask = nil
+        end
+        target.toxicShotEndTask = nil
+    end)
+end
+
+local function doToxicShot(target)
+    if not target.components.health or target.components.health.currenthealth <= 0 then
+        return
+    end
+
+    -- DOT発動中は効果延長のみ
+    if target.toxicShotDamageTask ~= nil then
+        doToxicShotEndTask(target)
+        return
+    end
+
+    -- 毒DOT（毎秒6ダメージ、4秒間）
+    target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
+        if not target:IsValid() or target.components.health == nil or target.components.health.currenthealth <= 0 then
+            if target.toxicShotDamageTask ~= nil then
+                target.toxicShotDamageTask:Cancel()
+                target.toxicShotDamageTask = nil
+            end
+            return
+        end
+
+        toxicEffect(target)
+        target.components.health:DoDelta(-6, nil, "toxicShot")
+        if target.HUD then target.HUD.bloodover:Flash() end
+    end)
+
+    doToxicShotEndTask(target)
 end
 
 local function onattack(inst, atker, target, skipsanity)
 
-    -- ブラインド効果は吹き矢攻撃の場合のみ
+    -- ブラインド効果・毒DOTは吹き矢攻撃の場合のみ
     if inst:HasTag("blowdart") then
 
+        doBlind(target)
+        doToxicShot(target)
+
         if target.blindEffect ~= nil then
-            doBlind(target)
             doBlindEffectEndTask(target)
             return
         end
 
-        doBlind(target)
         doBlindEffect(target)
         doBlindEffectEndTask(target)
 
     end
 
-    -- １回でも攻撃したら使用率回復出来るようにする
-    inst.components.trader.enabled = true
-
-end
-
-local function onFinished(inst)
-
-    if inst:HasTag("blowdart") then
-        -- 攻撃アクションを吹き矢ではなくする
-        inst:RemoveTag("blowdart")
-        -- 攻撃時にダーツを飛ばなくする
-        inst.components.weapon:SetProjectile(nil)
-        -- 射程を殴りに変更
-        inst.components.weapon:SetRange(nil, nil)
-        -- 攻撃で%を減らなくする
-        inst.components.weapon.attackwear = 0
-    end
-
-    -- finiteusesの作りがゴミなので使用率リフレッシュ
-    local finiteuses = inst.components.finiteuses
-    finiteuses.inst:PushEvent("percentusedchange", {percent = finiteuses:GetPercent()})
-end
-
-local function shouldAcceptItem(inst, item)
-    -- 使用率回復に使用できるのはキノコだけ
-    if item.prefab == "red_cap"  or item.prefab == "green_cap" or item.prefab == "blue_cap" then
-       return true
-    end
-    return false
-end
-
-local function onGetItem(inst, giver, item)
-
-    -- キノコを追加した場合
-    -- if item.prefab == "red_cap"  or item.prefab == "green_cap" or item.prefab == "blue_cap" then
-
-        -- inst.SoundEmitter:PlaySound("dontstarve/common/teleportworm/swallow")
-        inst.SoundEmitter:PlaySound("dontstarve/creatures/mandrake/pop")
-
-        -- 吹き矢じゃなかった場合
-        if not inst:HasTag("blowdart") then
-            -- 攻撃アクションを吹き矢に戻す
-            inst:AddTag("blowdart")
-            -- 射程を戻す
-            inst.components.weapon:SetRange(4, 8)
-            -- 攻撃時にダーツを飛ばす
-            inst.components.weapon:SetProjectile("blowdart_walrus")
-            -- 攻撃で%を減るようにする
-            inst.components.weapon.attackwear = 1
-        end
-
-        -- キノコによって回復率が異なる
-        local finiteuses = inst.components.finiteuses
-        if item.prefab == "red_cap" then
-            finiteuses.current = finiteuses.current + finiteuses.total * 0.1
-        end
-        if item.prefab == "green_cap" then
-            finiteuses.current = finiteuses.current + finiteuses.total * 0.5
-        end
-        if item.prefab == "blue_cap" then
-            finiteuses.current = finiteuses.current + finiteuses.total * 1.0
-        end
-
-        -- 回復した結果100%を超えた
-        if finiteuses.current >= finiteuses.total then
-           finiteuses.current = finiteuses.total
-           -- キノコを追加できない
-           inst.components.trader.enabled = false
-        end
-
-        -- 使用率を反映
-        finiteuses.inst:PushEvent("percentusedchange", {percent = finiteuses:GetPercent()})
-    -- end
-end
-
-local function onLoad(inst, data)
-    if data then
-        if data.isTraderEnabled ~= nil then
-            inst.components.trader.enabled = data.isTraderEnabled
-        end
-        if data.isBlowdartFinished then
-            onFinished(inst)
-        end
-    end
-end
-
-local function onSave(inst, data)
-    data.isTraderEnabled = inst.components.trader.enabled
-    data.isBlowdartFinished = not inst:HasTag("blowdart")
 end
 
 local function fn(Sim)
@@ -202,9 +173,9 @@ local function fn(Sim)
     -- 武器
     inst:AddComponent("weapon")
     -- ダメージ
-    inst.components.weapon:SetDamage(10)
+    inst.components.weapon:SetDamage(30)
     -- 範囲（攻撃射程、ヒット射程）
-    inst.components.weapon:SetRange(4, 8)
+    inst.components.weapon:SetRange(8, 10)
     -- 攻撃効果
     inst.components.weapon:SetOnAttack(onattack)
     -- 吹き矢の矢を飛ばす見た目追加
@@ -234,21 +205,6 @@ local function fn(Sim)
     inst.components.characterspecific:SetOwner("teemo")
     inst.components.characterspecific:SetStorable(true)
     inst.components.characterspecific:SetComment("Captain Teemo on duty!") 
-
-    -- 使用率
-    inst:AddComponent("finiteuses")
-    inst.components.finiteuses:SetMaxUses(10)
-    inst.components.finiteuses:SetUses(10)
-    inst.components.finiteuses:SetOnFinished(onFinished)
-
-    -- 使用率回復
-    inst:AddComponent("trader")
-    inst.components.trader.onaccept = onGetItem
-    inst.components.trader:SetAcceptTest(shouldAcceptItem)
-    inst.components.trader.enabled = false
-
-    inst.OnSave = onSave
-    inst.OnLoad = onLoad
 
     return inst
 end

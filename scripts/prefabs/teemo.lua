@@ -145,89 +145,6 @@ local common_postinit = function(inst)
     inst:AddTag("teemo")
 end
 
-local function doToxicShotEndTask(target)
-
-    if target.toxicShotEndTask ~= nil then
-        target.toxicShotEndTask:Cancel()
-    end
-
-    target.toxicShotEndTask = target:DoTaskInTime(4.0, function(target)
-        if target.toxicShotDamageTask ~= nil then
-            target.toxicShotDamageTask:Cancel()
-            target.toxicShotDamageTask = nil
-        end
-    end, target)
-end
-
-local function toxicEffect(target)
-    -- 毒エフェクト
-    local size = 1
-    if target:HasTag("smallcreature") then
-        size = 0
-    elseif target:HasTag("largecreature") then
-        size = 2
-    end
-
-    local fx = SpawnPrefab("toxic_effect_by_teemo")
-    fx.entity:SetParent(target.entity)
-    fx.Transform:SetPosition(0, size, 0)
-end
-
-local function toxicShot(inst, data)
-    local target = data.target
-
-    if target.components.health then
-        -- ヘルスが無い場合は何もしない
-        if target.components.health.currenthealth <= 0 then
-            return
-        end
-
-        -- 毒エフェクト
-        toxicEffect(target)
-        target.components.health:DoDelta(-10, nil, "toxicShot")
-    end
-
-    -- toxicShot発動中は効果延長
-    if target.toxicShotDamageTask ~= nil then
-        doToxicShotEndTask(target)
-        return
-    end
-
-    if target.components.combat then
-
-        if target.components.health then
-            -- if target.toxicShotDamageTask ~= nil then
-            --     target.toxicShotDamageTask:Cancel()
-            --     target.toxicShotDamageTask = nil
-            -- end
-            
-            -- 毒の効果（1秒毎
-            target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
-
-                -- ヘルスが無い場合はタスクをキャンセル
-                if target.components.health == nil or target.components.health.currenthealth <= 0 then
-                    if target.toxicShotDamageTask ~= nil then
-                        target.toxicShotDamageTask:Cancel()
-                        target.toxicShotDamageTask = nil
-                    end
-                    return
-                end
-
-                -- 毒エフェクト
-                toxicEffect(target)
-
-                -- ダメージ
-                local dmg = 6
-                target.components.health:DoDelta(-dmg, nil, "toxicShot")
-                -- プレーヤーの場合画面が赤くなるやつ（PVP用)
-                if target.HUD then target.HUD.bloodover:Flash() end
-
-            end)
-        end
-
-        doToxicShotEndTask(target)
-    end
-end
 
 -- ACTIONS.GIVE.fn = function(act)
 --     if act.target ~= nil and act.target.components.trader ~= nil then
@@ -256,9 +173,6 @@ local master_postinit = function(inst)
     inst:ListenForEvent("attacked", onAttacked)
     inst:ListenForEvent("death", onDeath)
     inst:ListenForEvent("ms_respawnedfromghost", function() startPassive(inst) end)
-
-    -- 攻撃を当てた時のイベント
-    inst:ListenForEvent("onhitother", toxicShot)
 
 end
 

@@ -32,15 +32,8 @@ local function fn(Sim)
     -- inst.components.lighttweener:StartTween(inst.Light, 3, -.9, -0.9, {-1,-1,-1}, 0)
     -- inst.components.lighttweener:StartTween(nil, 3, .9, 0.9, nil, .2)
 
+    inst.persists = false
     inst.kill_fx = kill_fx
-
-    -- inst:DoTaskInTime(2.5, inst.Remove)
-
-    -- inst:DoTaskInTime(2.5, function(inst)
-    --     inst.AnimState:PlayAnimation("close")
-    --     inst.components.lighttweener:StartTween(nil, 0, .9, 0.9, nil, .2)
-    --     inst:DoTaskInTime(0.1, inst.Remove)
-    -- end, inst)
 
     return inst
 end
