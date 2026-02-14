@@ -11,11 +11,13 @@ local function onequip(inst, owner)
     owner.AnimState:OverrideSymbol("swap_object", "swap_blind_dart", "swap_blind_dart")
     owner.AnimState:Show("ARM_carry")
     owner.AnimState:Hide("ARM_normal")
+    owner:AddTag("blind_dart_equipped")
 end
 
-local function onunequip(inst, owner) 
+local function onunequip(inst, owner)
     owner.AnimState:Hide("ARM_carry")
     owner.AnimState:Show("ARM_normal")
+    owner:RemoveTag("blind_dart_equipped")
 end
 
 local function doBlindEffect(target)

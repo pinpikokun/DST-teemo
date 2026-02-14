@@ -143,6 +143,26 @@ local common_postinit = function(inst)
 	inst.soundsname = "teemo"
 	inst.MiniMapEntity:SetIcon( "teemo.tex" )
     inst:AddTag("teemo")
+
+    -- 上向き攻撃時にblind_dartが体の下にはみ出る対策（クライアント側）
+    inst._dartHiding = false
+    inst:DoPeriodicTask(0, function()
+        if inst:HasTag("blind_dart_equipped") then
+            local isUp = inst.AnimState:GetCurrentFacing() == FACING_UP
+            local isAttacking = inst.AnimState:IsCurrentAnimation("dart")
+                             or inst.AnimState:IsCurrentAnimation("dart_pre")
+
+            if isUp and isAttacking then
+                if not inst._dartHiding then
+                    inst._dartHiding = true
+                    inst.AnimState:SetSymbolMultColour("swap_object", 0, 0, 0, 0)
+                end
+            elseif inst._dartHiding then
+                inst.AnimState:SetSymbolMultColour("swap_object", 1, 1, 1, 1)
+                inst._dartHiding = false
+            end
+        end
+    end)
 end
 
 
