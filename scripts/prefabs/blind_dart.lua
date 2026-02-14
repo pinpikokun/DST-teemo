@@ -46,9 +46,9 @@ local function doBlindEffectEndTask(target)
 
     target.blindEffectEndTask = target:DoTaskInTime(time, function(target)
         if target.blindEffect ~= nil then
-            if target.blindEffect:IsValid() and target.blindEffect.kill_fx then
+            if target.blindEffect.kill_fx then
                 target.blindEffect:kill_fx()
-            elseif target.blindEffect:IsValid() then
+            else
                 target.blindEffect:Remove()
             end
             target.blindEffect = nil
@@ -102,7 +102,7 @@ local function doToxicShot(target)
         return
     end
 
-    -- 毒DOT（毎秒5ダメージ、4秒間）
+    -- 毒DOT（毎秒6ダメージ、4秒間）
     target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
         if not target:IsValid() or target.components.health == nil or target.components.health.currenthealth <= 0 then
             if target.toxicShotDamageTask ~= nil then
@@ -113,7 +113,7 @@ local function doToxicShot(target)
         end
 
         toxicEffect(target)
-        target.components.health:DoDelta(-5, nil, "toxicShot")
+        target.components.health:DoDelta(-6, nil, "toxicShot")
         if target.HUD then target.HUD.bloodover:Flash() end
     end)
 
@@ -173,7 +173,7 @@ local function fn(Sim)
     -- 武器
     inst:AddComponent("weapon")
     -- ダメージ
-    inst.components.weapon:SetDamage(20)
+    inst.components.weapon:SetDamage(30)
     -- 範囲（攻撃射程、ヒット射程）
     inst.components.weapon:SetRange(8, 10)
     -- 攻撃効果
