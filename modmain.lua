@@ -82,7 +82,8 @@ AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
         and player.components.inventory then
         player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
         local trap = GLOBAL.SpawnPrefab("noxious_trap")
-        player.components.inventory:GiveItem(trap)
+        local pos = player:GetPosition()
+        trap.components.deployable:Deploy(pos, player)
     end
 end)
 
