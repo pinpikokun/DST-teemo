@@ -78,12 +78,18 @@ STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"
 AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
     if player:HasTag("teemo")
         and player._noxiousTrapStacks
-        and player._noxiousTrapStacks:value() > 0
-        and player.components.inventory then
+        and player._noxiousTrapStacks:value() > 0 then
         player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
-        local trap = GLOBAL.SpawnPrefab("noxious_trap")
-        local pos = player:GetPosition()
-        trap.components.deployable:Deploy(pos, player)
+
+        -- 設置アニメーション
+        player.sg:GoToState("doshortaction")
+
+        -- アニメーションに合わせてトラップを設置
+        player:DoTaskInTime(10 * GLOBAL.FRAMES, function()
+            local trap = GLOBAL.SpawnPrefab("noxious_trap")
+            local pos = player:GetPosition()
+            trap.components.deployable:Deploy(pos, player)
+        end)
     end
 end)
 
