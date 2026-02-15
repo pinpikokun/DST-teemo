@@ -20,6 +20,10 @@ local NoxiousTrapSlot = Class(Widget, function(self, owner)
     self.icon:SetOnClick(function() self:OnClick() end)
     self.icon.scale_on_focus = false
 
+    -- ホバーアニメーション（ItemSlot準拠）
+    self.base_scale = 1
+    self.highlight_scale = 1.3
+
     -- スタック数テキスト（右下、DST標準のアイテム個数と同じ位置）
     self.stackcount = self:AddChild(Text(NUMBERFONT, 22))
     self.stackcount:SetPosition(16, -16, 0)
@@ -32,6 +36,16 @@ local NoxiousTrapSlot = Class(Widget, function(self, owner)
 
     self:UpdateDisplay()
 end)
+
+function NoxiousTrapSlot:OnGainFocus()
+    NoxiousTrapSlot._base.OnGainFocus(self)
+    self:ScaleTo(self.base_scale, self.highlight_scale, .125)
+end
+
+function NoxiousTrapSlot:OnLoseFocus()
+    NoxiousTrapSlot._base.OnLoseFocus(self)
+    self:ScaleTo(self.highlight_scale, self.base_scale, .25)
+end
 
 function NoxiousTrapSlot:UpdateDisplay()
     local stacks = self.owner._noxiousTrapStacks:value()
