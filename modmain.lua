@@ -86,12 +86,34 @@ AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
     end
 end)
 
--- テーモ用HUDバッジ（ノクサストラップ スタック数表示）
-AddClassPostConstruct("widgets/statusdisplays", function(self)
-    if self.owner and self.owner:HasTag("teemo") then
-        local NoxiousTrapBadge = require("widgets/noxioustrap_badge")
-        self.noxioustrapbadge = self:AddChild(NoxiousTrapBadge(self.owner))
-        self.noxioustrapbadge:SetPosition(-40, -120, 0)
+-- テーモ用ノクサストラップ専用スロット（インベントリ一番右に固定）
+AddClassPostConstruct("widgets/inventorybar", function(self)
+    if not self.owner:HasTag("teemo") then return end
+
+    local NoxiousTrapSlot = require("widgets/noxioustrap_slot")
+
+    local _Rebuild = self.Rebuild
+    self.Rebuild = function(self, ...)
+        if self.noxioustrapslot ~= nil then
+            self.noxioustrapslot:Kill()
+            self.noxioustrapslot = nil
+        end
+
+        _Rebuild(self, ...)
+
+        -- 最後のスロットを非表示＆操作無効にする
+        local last = self.inv[#self.inv]
+        if last then
+            last:Hide()
+            last.OnControl = function() return false end
+
+            -- 最後のスロットと同じ位置に NoxiousTrapSlot を配置
+            local pos = last:GetPosition()
+            self.noxioustrapslot = self.toprow:AddChild(NoxiousTrapSlot(self.owner))
+            self.noxioustrapslot:SetPosition(pos.x, pos.y, pos.z)
+        end
     end
+
+    self.rebuild_pending = true
 end)
 

@@ -223,6 +223,13 @@ local master_postinit = function(inst)
         startNoxiousTrapRecovery(inst)
     end)
 
+    -- 最終スロットをノクサストラップ専用にする（アイテム配置を禁止）
+    local _CanTakeItemInSlot = inst.components.inventory.CanTakeItemInSlot
+    rawset(inst.components.inventory, "CanTakeItemInSlot", function(self, item, slot)
+        if slot == self.maxslots then return false end
+        return _CanTakeItemInSlot(self, item, slot)
+    end)
+
     -- ノクサストラップ スタック管理
     inst._noxiousTrapStacks:set(NOXIOUS_TRAP_INITIAL_STACKS)
     inst._noxiousTrapTimer = 0
