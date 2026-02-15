@@ -51,4 +51,3 @@ Don't Starve Together (DST) character mod — "Captain Teemo" (League of Legends
 ## Notes
 
 - Comments are mixed English and Japanese
-- Some files contain large blocks of commented-out reference code (e.g., spawn FX list in noxious_trap.lua)
