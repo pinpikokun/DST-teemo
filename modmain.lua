@@ -81,14 +81,20 @@ AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
         and player._noxiousTrapStacks:value() > 0 then
         player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
 
-        -- 設置アニメーション
-        player.sg:GoToState("doshortaction")
+        -- 建設アニメーション（build_pre → build_loop）
+        player.sg:GoToState("dolongaction")
 
-        -- アニメーションに合わせてトラップを設置
-        player:DoTaskInTime(10 * GLOBAL.FRAMES, function()
+        -- アニメーション途中でトラップを設置し、idle に戻す
+        -- 移動等で中断された場合はスタックを返還
+        player:DoTaskInTime(30 * GLOBAL.FRAMES, function()
+            if not player.sg:HasStateTag("doing") then
+                player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() + 1)
+                return
+            end
             local trap = GLOBAL.SpawnPrefab("noxious_trap")
             local pos = player:GetPosition()
             trap.components.deployable:Deploy(pos, player)
+            player.sg:GoToState("idle")
         end)
     end
 end)
