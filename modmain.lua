@@ -1,3 +1,5 @@
+GLOBAL.NOXIOUS_TRAP_MAX_STACKS = 5
+
 local STRINGS = GLOBAL.STRINGS
 
 STRINGS.CHARACTER_TITLES.teemo = "Captain Teemo"
@@ -69,33 +71,62 @@ AddMinimapAtlas("images/map_icons/teemo.xml")
 -- アイテムの名前 item name
 STRINGS.NAMES.BLIND_DART = "Blind Dart"
 
--- @@ RECIPE @@ --
--- レシピの名前 recipe name
+-- アイテムの名前 item name
 STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"
--- レシピの説明 recipe note
-STRINGS.RECIPE_DESC.NOXIOUS_TRAP = "Mushroom Trap"
 
-local teemoTab = AddRecipeTab(
-    "Teemo Items" -- rec_str
-    ,998 -- rec_sort
-    ,GLOBAL.resolvefilepath("images/hud/teemotab.xml") -- rec_atlas
-    ,"teemotab.tex" -- rec_icon
-    ,"teemo" -- rec_owner_tag
-    )
+-- ノクサストラップ スタック消費RPC
+AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
+    if player:HasTag("teemo")
+        and player._noxiousTrapStacks
+        and player._noxiousTrapStacks:value() > 0 then
+        player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
 
-local noxious_trap = AddRecipe(
-    "noxious_trap" -- name
-    ,{GLOBAL.Ingredient("red_cap", 1)} -- ingredients
-    ,teemoTab -- tab
-    ,GLOBAL.TECH.NONE -- level
-    ,nil -- placer
-    ,nil -- min_spacing
-    ,nil -- nounlock
-    ,nil -- numtogive
-    ,"teemo" -- builder_tag
-    ,GLOBAL.resolvefilepath("images/inventoryimages/noxious_trap.xml") -- atlas
-    --,"noxious_trap.tex" -- image (name + .tex)
-    --, -- lockedatlas
-    --, -- lockedimage
-    )
+        -- 建設アニメーション（build_pre → build_loop）
+        player.sg:GoToState("dolongaction")
+
+        -- アニメーション途中でトラップを設置し、idle に戻す
+        -- 移動等で中断された場合はスタックを返還
+        player:DoTaskInTime(30 * GLOBAL.FRAMES, function()
+            if not player.sg:HasStateTag("doing") then
+                player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() + 1)
+                return
+            end
+            local trap = GLOBAL.SpawnPrefab("noxious_trap")
+            local pos = player:GetPosition()
+            trap.components.deployable:Deploy(pos, player)
+            player.sg:GoToState("idle")
+        end)
+    end
+end)
+
+-- テーモ用ノクサストラップ専用スロット（インベントリ一番右に固定）
+AddClassPostConstruct("widgets/inventorybar", function(self)
+    if not self.owner:HasTag("teemo") then return end
+
+    local NoxiousTrapSlot = require("widgets/noxioustrap_slot")
+
+    local _Rebuild = self.Rebuild
+    self.Rebuild = function(self, ...)
+        if self.noxioustrapslot ~= nil then
+            self.noxioustrapslot:Kill()
+            self.noxioustrapslot = nil
+        end
+
+        _Rebuild(self, ...)
+
+        -- 最後のスロットを非表示＆操作無効にする
+        local last = self.inv[#self.inv]
+        if last then
+            last:Hide()
+            last.OnControl = function() return false end
+
+            -- 最後のスロットと同じ位置に NoxiousTrapSlot を配置
+            local pos = last:GetPosition()
+            self.noxioustrapslot = self.toprow:AddChild(NoxiousTrapSlot(self.owner))
+            self.noxioustrapslot:SetPosition(pos.x, pos.y, pos.z)
+        end
+    end
+
+    self.rebuild_pending = true
+end)
 

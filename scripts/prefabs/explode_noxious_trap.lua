@@ -1,6 +1,5 @@
 local assets =
 {
---    Asset("ANIM", "anim/explode_noxious_trap_p.zip"),
     Asset("ANIM", "anim/explode_noxious_trap_g.zip"),
 }
 
@@ -24,7 +23,6 @@ local function playExplodeAnim(proxy)
 
     -- ウンコ燃焼を使う
     inst.AnimState:SetBank("poopcloud")
---    inst.AnimState:SetBuild("explode_noxious_trap_"..(math.random()>=.5 and "p" or "g"))
     inst.AnimState:SetBuild("explode_noxious_trap_g")
     inst.AnimState:PlayAnimation("idle")
     inst.AnimState:SetFinalOffset(-1)

@@ -16,8 +16,9 @@ local function doEndTask(v)
     end
 
     v.noxiousTrapEndTask = v:DoTaskInTime(4.0, function(v)
-        if v.components.locomotor ~= nil then
-            v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + v._noxiousTrapSlowAmount
+        if not v:IsValid() then return end
+        if v.components.locomotor ~= nil and v._noxiousTrapSlowAmount ~= nil then
+            v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) - v._noxiousTrapSlowAmount
             v._noxiousTrapSlowAmount = nil
         end
         if v.noxiousTrapDamageTask ~= nil then
@@ -29,6 +30,10 @@ end
 
 local function doSlow(v)
     if v.components.locomotor then
+        -- 既にスロー中なら再加算しない（持続時間はdoEndTaskでリセット）
+        if v._noxiousTrapSlowAmount ~= nil then
+            return
+        end
         local slowAmount = v.components.locomotor.runspeed * -0.5
         v._noxiousTrapSlowAmount = slowAmount
         v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + slowAmount
@@ -89,8 +94,8 @@ function Explosive_Noxious_Trap:OnBurnt()
                         -- 毒の効果（1秒毎
                         v.noxiousTrapDamageTask = v:DoPeriodicTask(1.0, function()
 
-                            -- ヘルスが無い場合はタスクをキャンセル
-                            if v.components.health == nil or v.components.health.currenthealth <= 0 then
+                            -- エンティティが無効 or ヘルスが無い場合はタスクをキャンセル
+                            if not v:IsValid() or v.components.health == nil or v.components.health.currenthealth <= 0 then
                                 if v.noxiousTrapDamageTask ~= nil then
                                     v.noxiousTrapDamageTask:Cancel()
                                     v.noxiousTrapDamageTask = nil
