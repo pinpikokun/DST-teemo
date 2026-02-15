@@ -1,4 +1,4 @@
-local MAX_TRAPS = 3
+local MAX_TRAPS = 10
 local TRAP_LIFETIME = 300 -- 5分
 
 local assets=
