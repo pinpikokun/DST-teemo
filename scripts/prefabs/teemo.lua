@@ -7,7 +7,7 @@ local assets = {
 }
 local prefabs = {}
 
-local NOXIOUS_TRAP_MAX_STACKS = GLOBAL.NOXIOUS_TRAP_MAX_STACKS
+local NOXIOUS_TRAP_MAX_STACKS = NOXIOUS_TRAP_MAX_STACKS
 local NOXIOUS_TRAP_INITIAL_STACKS = 3
 local NOXIOUS_TRAP_RECOVERY_INTERVAL = 30
 
@@ -27,7 +27,7 @@ local function doCamouflage(inst)
     if not inst.isCamouflage then
         inst.isCamouflage = true
         inst:AddTag("notarget")
-        inst.AnimState:SetMultColour(.1,.1,.1,.5)
+        inst.AnimState:SetMultColour(.8,.8,.8,.8)
         inst.DynamicShadow:Enable(false)
 
         -- ステルス突入時のみ、既にターゲットしている敵の攻撃を無効化

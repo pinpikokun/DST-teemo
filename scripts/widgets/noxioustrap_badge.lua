@@ -6,7 +6,7 @@ local ImageButton = require "widgets/imagebutton"
 local NoxiousTrapBadge = Class(Widget, function(self, owner)
     Widget._ctor(self, "NoxiousTrapBadge")
     self.owner = owner
-    self.maxStacks = GLOBAL.NOXIOUS_TRAP_MAX_STACKS
+    self.maxStacks = NOXIOUS_TRAP_MAX_STACKS
 
     -- キノコアイコン（クリック可能）
     self.button = self:AddChild(ImageButton(

@@ -176,8 +176,12 @@ local function startTrap(inst)
     inst.Light:SetColour(155/255, 225/255, 250/255)
     inst.Light:SetRadius(1.5)
 
-	inst.AnimState:SetMultColour(.4,.4,.4,.4)
     inst.SoundEmitter:PlaySound("dontstarve/creatures/mandrake/pop")
+
+	-- 1秒後にステルス化
+	inst:DoTaskInTime(1.0, function()
+		inst.AnimState:SetMultColour(.8, .8, .8, .8)
+	end)
 	inst:RemoveComponent("inventoryitem")
 
     stopSearchTask(inst)
