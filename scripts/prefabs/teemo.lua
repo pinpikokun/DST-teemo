@@ -35,7 +35,7 @@ local function doCamouflage(inst)
         local ents = TheSim:FindEntities(x, y, z, 20)
         for k,v in pairs(ents) do
             if v.components.combat and v.components.combat.target == inst then
-                v.components.combat:BlankOutAttacks(.5)
+                v.components.combat:SetTarget(nil)
             end
         end
     end
