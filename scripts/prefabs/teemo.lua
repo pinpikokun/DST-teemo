@@ -26,9 +26,14 @@ local function doCamouflage(inst)
 
     if not inst.isCamouflage then
         inst.isCamouflage = true
-        inst:AddTag("notarget")
         inst.AnimState:SetMultColour(.8,.8,.8,.8)
         inst.DynamicShadow:Enable(false)
+
+        -- ステルス中は敵との当たり判定を無効化（すり抜ける）
+        inst.Physics:ClearCollisionMask()
+        inst.Physics:CollidesWith(COLLISION.WORLD)
+        inst.Physics:CollidesWith(COLLISION.OBSTACLES)
+        inst.Physics:CollidesWith(COLLISION.SMALLOBSTACLES)
 
         -- ステルス中、敵の攻撃を継続的にブロック（ターゲットは維持）
         local function blankNearbyAttacks()
@@ -60,9 +65,16 @@ local function disableCamouflage(inst)
     if not inst.isCamouflage then return end
 
     inst.isCamouflage = false
-    inst:RemoveTag("notarget")
     inst.AnimState:SetMultColour(1.0,1.0,1.0,1.0)
     inst.DynamicShadow:Enable(true)
+
+    -- 当たり判定を復元
+    inst.Physics:ClearCollisionMask()
+    inst.Physics:CollidesWith(COLLISION.WORLD)
+    inst.Physics:CollidesWith(COLLISION.OBSTACLES)
+    inst.Physics:CollidesWith(COLLISION.SMALLOBSTACLES)
+    inst.Physics:CollidesWith(COLLISION.CHARACTERS)
+    inst.Physics:CollidesWith(COLLISION.GIANTS)
 
     -- ステルス中の攻撃ブロックを停止
     if inst._blankOutTask then
