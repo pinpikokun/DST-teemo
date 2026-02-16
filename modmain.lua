@@ -8,6 +8,7 @@ STRINGS.CHARACTER_DESCRIPTIONS.teemo = "Size doesn't mean everything."
 STRINGS.CHARACTER_QUOTES.teemo = "\"on duty !! \""
 STRINGS.CHARACTERS.TEEMO = GLOBAL.require "speech_teemo"
 STRINGS.NAMES.TEEMO = "Teemo"
+STRINGS.SKIN_NAMES.teemo_none = "Teemo"
 STRINGS.CHARACTERS.GENERIC.DESCRIBE.TEEMO = 
 {
 	GENERIC = "It's Teemo!",
@@ -19,6 +20,7 @@ STRINGS.CHARACTERS.GENERIC.DESCRIBE.TEEMO =
 
 PrefabFiles = {
 	"teemo",
+	"teemo_none",
 	"noxious_trap",
 	"explode_noxious_trap",
 	"toxic_effect_by_teemo",
@@ -44,6 +46,12 @@ Assets = {
 	
 	Asset( "IMAGE", "images/avatars/avatar_ghost_teemo.tex" ),
     Asset( "ATLAS", "images/avatars/avatar_ghost_teemo.xml" ),
+
+    Asset( "IMAGE", "images/avatars/self_inspect_teemo.tex" ),
+    Asset( "ATLAS", "images/avatars/self_inspect_teemo.xml" ),
+
+    Asset( "IMAGE", "bigportraits/teemo_none.tex" ),
+    Asset( "ATLAS", "bigportraits/teemo_none.xml" ),
     
 	Asset( "IMAGE", "images/inventoryimages/blind_dart.tex" ),
     Asset( "ATLAS", "images/inventoryimages/blind_dart.xml" ),
@@ -65,8 +73,19 @@ RemapSoundEvent( "dontstarve/characters/teemo/talk_LP", "teemo/characters/teemo/
 RemapSoundEvent( "dontstarve/characters/teemo/emote", "teemo/characters/teemo/emote" )
 RemapSoundEvent( "dontstarve/characters/teemo/ghost_LP", "teemo/characters/teemo/ghost_LP" )
 
-AddModCharacter("teemo", "MALE")
+local skin_modes = {
+    {
+        type = "ghost_skin",
+        anim_bank = "ghost",
+        idle_anim = "idle",
+        scale = 0.75,
+        offset = { 0, -25 },
+    },
+}
+AddModCharacter("teemo", "MALE", skin_modes)
 AddMinimapAtlas("images/map_icons/teemo.xml")
+
+GLOBAL.PREFAB_SKINS["teemo"] = { "teemo_none" }
 
 -- アイテムの名前 item name
 STRINGS.NAMES.BLIND_DART = "Blind Dart"
