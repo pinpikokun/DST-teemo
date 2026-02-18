@@ -26,18 +26,27 @@ local function doCamouflage(inst)
 
     if not inst.isCamouflage then
         inst.isCamouflage = true
-        inst:AddTag("notarget")
         inst.AnimState:SetMultColour(.8,.8,.8,.8)
         inst.DynamicShadow:Enable(false)
 
-        -- ステルス突入時のみ、既にターゲットしている敵の攻撃を無効化
-        local x,y,z = inst.Transform:GetWorldPosition()
-        local ents = TheSim:FindEntities(x, y, z, 20)
-        for k,v in pairs(ents) do
-            if v.components.combat and v.components.combat.target == inst then
-                v.components.combat:BlankOutAttacks(.5)
+        -- ステルス中は敵との当たり判定を無効化（すり抜ける）
+        inst.Physics:ClearCollisionMask()
+        inst.Physics:CollidesWith(COLLISION.WORLD)
+        inst.Physics:CollidesWith(COLLISION.OBSTACLES)
+        inst.Physics:CollidesWith(COLLISION.SMALLOBSTACLES)
+
+        -- ステルス中、敵の攻撃を継続的にブロック（ターゲットは維持）
+        local function blankNearbyAttacks()
+            local x,y,z = inst.Transform:GetWorldPosition()
+            local ents = TheSim:FindEntities(x, y, z, 20)
+            for k,v in pairs(ents) do
+                if v.components.combat and v.components.combat.target == inst then
+                    v.components.combat:BlankOutAttacks(1)
+                end
             end
         end
+        blankNearbyAttacks()
+        inst._blankOutTask = inst:DoPeriodicTask(.5, blankNearbyAttacks)
     end
 end
 
@@ -56,9 +65,22 @@ local function disableCamouflage(inst)
     if not inst.isCamouflage then return end
 
     inst.isCamouflage = false
-    inst:RemoveTag("notarget")
     inst.AnimState:SetMultColour(1.0,1.0,1.0,1.0)
     inst.DynamicShadow:Enable(true)
+
+    -- 当たり判定を復元
+    inst.Physics:ClearCollisionMask()
+    inst.Physics:CollidesWith(COLLISION.WORLD)
+    inst.Physics:CollidesWith(COLLISION.OBSTACLES)
+    inst.Physics:CollidesWith(COLLISION.SMALLOBSTACLES)
+    inst.Physics:CollidesWith(COLLISION.CHARACTERS)
+    inst.Physics:CollidesWith(COLLISION.GIANTS)
+
+    -- ステルス中の攻撃ブロックを停止
+    if inst._blankOutTask then
+        inst._blankOutTask:Cancel()
+        inst._blankOutTask = nil
+    end
 
     inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD - (TUNING.WILSON_ATTACK_PERIOD * 0.4)
     if inst.resetAttackSpeedTask ~= nil then
@@ -109,6 +131,11 @@ local function stopPassive(inst)
         inst.camouflageTask = nil
     end
 
+    if inst._blankOutTask ~= nil then
+        inst._blankOutTask:Cancel()
+        inst._blankOutTask = nil
+    end
+
     if inst.resetMoveQuickTask ~= nil then
         inst.resetMoveQuickTask:Cancel()
         inst.resetMoveQuickTask = nil
@@ -153,6 +180,7 @@ end
 local function onDeath(inst, data)
     inst.deathcause = data ~= nil and data.cause or "unknown"
     if inst.deathcause == "file_load" then return end
+    disableCamouflage(inst)
     stopPassive(inst)
     stopNoxiousTrapRecovery(inst)
 end
