@@ -1,5 +1,13 @@
 GLOBAL.NOXIOUS_TRAP_MAX_STACKS = 5
 
+-- MOD設定値の読み込み
+GLOBAL.TEEMO_HEALTH = GetModConfigData("health") or 100
+GLOBAL.TEEMO_HUNGER = GetModConfigData("hunger") or 100
+GLOBAL.TEEMO_SANITY = GetModConfigData("sanity") or 250
+GLOBAL.TEEMO_DAMAGE_MULT = GetModConfigData("damage_multiplier") or 1.0
+GLOBAL.TEEMO_ABSORPTION = GetModConfigData("absorption") or 0
+GLOBAL.TEEMO_SPEED_MULT = GetModConfigData("speed_multiplier") or 1.25
+
 local STRINGS = GLOBAL.STRINGS
 
 STRINGS.CHARACTER_TITLES.teemo = "Captain Teemo"

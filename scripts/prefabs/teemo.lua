@@ -73,12 +73,7 @@ end
 
 local function checkCamouflage(inst)
 
-    if inst.components.sanity == nil or inst.components.health == nil then
-        return
-    end
-
-    if inst.components.sanity:GetPercent() < .3 then
-        disableCamouflage(inst)
+    if inst.components.health == nil then
         return
     end
 
@@ -103,7 +98,7 @@ local function onAttacked(inst, data)
         inst.resetMoveQuickTask:Cancel()
     end
     inst.resetMoveQuickTask = inst:DoTaskInTime(5.0, function(inst)
-        inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * 1.26
+        inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * TEEMO_SPEED_MULT
         inst.resetMoveQuickTask = nil
     end, inst)
 end
@@ -128,7 +123,7 @@ end
 local function startPassive(inst)
     updCamouflagePrm(inst)
     inst.camouflageTask = inst:DoPeriodicTask(.5, checkCamouflage)
-    inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * 1.26
+    inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * TEEMO_SPEED_MULT
 end
 
 local function stopNoxiousTrapRecovery(inst)
@@ -201,9 +196,11 @@ end
 
 local master_postinit = function(inst)
 
-	inst.components.health:SetMaxHealth(100)
-	inst.components.hunger:SetMax(100)
-	inst.components.sanity:SetMax(100)
+	inst.components.health:SetMaxHealth(TEEMO_HEALTH)
+	inst.components.hunger:SetMax(TEEMO_HUNGER)
+	inst.components.sanity:SetMax(TEEMO_SANITY)
+	inst.components.combat.damagemultiplier = TEEMO_DAMAGE_MULT
+	inst.components.health:SetAbsorptionAmount(TEEMO_ABSORPTION)
 
     startPassive(inst)
 
