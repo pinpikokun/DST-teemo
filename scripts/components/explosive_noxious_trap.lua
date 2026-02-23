@@ -1,7 +1,8 @@
 local Explosive_Noxious_Trap = Class(function(self,inst)
     self.inst = inst
     self.explosiveRange = 4
-    self.explosiveDamage = 50
+    self.explosiveDamage = TEEMO_NOXIOUS_TRAP_DAMAGE
+    self.explosiveDotDamage = TEEMO_NOXIOUS_TRAP_DOT
     self.deployer = nil
 end)
 
@@ -89,9 +90,10 @@ function Explosive_Noxious_Trap:OnBurnt()
                     -- 初撃ダメージ（GetAttackedで実ダメージ適用）
                     v.components.combat:GetAttacked(counterPlayer, self.explosiveDamage, nil)
 
-                    if v.components.health and v.noxiousTrapDamageTask == nil then
+                    if v.components.health and v.noxiousTrapDamageTask == nil and self.explosiveDotDamage > 0 then
 
                         -- 毒の効果（1秒毎
+                        local dotDamage = self.explosiveDotDamage
                         v.noxiousTrapDamageTask = v:DoPeriodicTask(1.0, function()
 
                             -- エンティティが無効 or ヘルスが無い場合はタスクをキャンセル
@@ -107,18 +109,18 @@ function Explosive_Noxious_Trap:OnBurnt()
                             toxicEffect(v)
 
                             -- ダメージ
-                            local dmg = self.explosiveDamage
+                            local dmg = dotDamage
                             if v:HasTag("smallcreature") then
-                                dmg = self.explosiveDamage * 0.75
+                                dmg = dotDamage * 0.75
                             end
                             if v:HasTag("largecreature") then
-                                dmg = self.explosiveDamage * 1.75
+                                dmg = dotDamage * 1.75
                             end
                             if v:HasTag("monster") then
-                                dmg = self.explosiveDamage * 1.75
+                                dmg = dotDamage * 1.75
                             end
                             if v:HasTag("player") then
-                                dmg = self.explosiveDamage * 0.35
+                                dmg = dotDamage * 0.35
                             end
 
                             v.components.health:DoDelta(-dmg, nil, "noxiousTrap")
