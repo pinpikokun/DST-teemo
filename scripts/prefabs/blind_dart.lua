@@ -1,5 +1,12 @@
 local TeemoPoison = require("teemo_poison_util")
 
+-- LoL テーモ ダート発射時セリフ
+local DART_QUOTES = {
+    "Blind 'em!",
+    "That's gotta sting.",
+    "Let the poison do its work.",
+}
+
 local assets = {
     Asset("ANIM", "anim/blind_dart.zip"),
 	Asset("ANIM", "anim/swap_blind_dart.zip"),
@@ -161,6 +168,11 @@ local function doToxicShot(target)
 end
 
 local function onattack(inst, atker, target, skipsanity)
+
+    -- ダート発射時セリフ（30%確率）
+    if atker and atker.components.talker and math.random() < 0.3 then
+        atker.components.talker:Say(DART_QUOTES[math.random(#DART_QUOTES)])
+    end
 
     -- ブラインド効果・毒DOTは吹き矢攻撃の場合のみ
     if inst:HasTag("blowdart") then
