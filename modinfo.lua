@@ -108,9 +108,9 @@ configuration_options = {
         hover = "Teemo's movement speed multiplier",
         options = {
             {description = "1.0x",  data = 1.0},
-            {description = "1.1x",  data = 1.1},
             {description = "1.25x", data = 1.25},
             {description = "1.5x",  data = 1.5},
+            {description = "2.0x",  data = 2.0},
         },
         default = 1.25,
     },
