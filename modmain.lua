@@ -19,6 +19,11 @@ GLOBAL.TUNING.TEEMO_HEALTH = GLOBAL.TEEMO_HEALTH
 GLOBAL.TUNING.TEEMO_HUNGER = GLOBAL.TEEMO_HUNGER
 GLOBAL.TUNING.TEEMO_SANITY = GLOBAL.TEEMO_SANITY
 
+-- キャラクター選択画面の初期アイテム表示用
+GLOBAL.TUNING.GAMEMODE_STARTING_ITEMS.DEFAULT.TEEMO = {"blind_dart", "noxious_trap"}
+RegisterInventoryItemAtlas("images/inventoryimages/blind_dart.xml", "blind_dart.tex")
+RegisterInventoryItemAtlas("images/inventoryimages/noxious_trap.xml", "noxious_trap.tex")
+
 local STRINGS = GLOBAL.STRINGS
 
 STRINGS.CHARACTER_TITLES.teemo = "Captain Teemo"
