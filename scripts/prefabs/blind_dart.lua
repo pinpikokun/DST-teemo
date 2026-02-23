@@ -120,7 +120,11 @@ local function doToxicShot(target)
         end
 
         toxicEffect(target)
-        target.components.health:DoDelta(-TEEMO_BLIND_DART_DOT, nil, "toxicShot")
+        local dot = TEEMO_BLIND_DART_DOT
+        if target:HasTag("player") then
+            dot = dot * 0.3
+        end
+        target.components.health:DoDelta(-dot, nil, "toxicShot")
         if target.HUD then target.HUD.bloodover:Flash() end
     end)
 

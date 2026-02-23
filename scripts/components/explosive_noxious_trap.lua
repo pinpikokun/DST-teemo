@@ -111,7 +111,7 @@ function Explosive_Noxious_Trap:OnBurnt()
                             -- ダメージ（プレイヤーのみ軽減）
                             local dmg = dotDamage
                             if v:HasTag("player") then
-                                dmg = dotDamage * 0.35
+                                dmg = dotDamage * 0.3
                             end
 
                             v.components.health:DoDelta(-dmg, nil, "noxiousTrap")
