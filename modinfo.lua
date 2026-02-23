@@ -250,4 +250,18 @@ configuration_options = {
         },
         default = 20,
     },
+    {
+        name = "poison_spoil_percent",
+        label = "Poison Food Spoilage",
+        hover = "Freshness of food dropped by poisoned enemies (±15% random) / 毒状態の敵がドロップする食料の鮮度（±15%ランダム）",
+        options = {
+            {description = "Off",  data = 0},
+            {description = "90%",  data = 0.9},
+            {description = "80%",  data = 0.8},
+            {description = "70%",  data = 0.7},
+            {description = "60%",  data = 0.6},
+            {description = "50%",  data = 0.5},
+        },
+        default = 0.7,
+    },
 }

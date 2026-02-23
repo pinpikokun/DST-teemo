@@ -1,3 +1,5 @@
+local TeemoPoison = require("teemo_poison_util")
+
 local Explosive_Noxious_Trap = Class(function(self,inst)
     self.inst = inst
     self.explosiveRange = 4
@@ -26,6 +28,8 @@ local function doEndTask(v)
             v.noxiousTrapDamageTask:Cancel()
             v.noxiousTrapDamageTask = nil
         end
+        -- 毒マーク解除（他の毒DOTが残っていなければ）
+        TeemoPoison.unmarkTeemoPoisoned(v)
     end, v)
 end
 
@@ -86,6 +90,11 @@ function Explosive_Noxious_Trap:OnBurnt()
             if v.components.combat and v ~= self.inst then
 
                 if not v:HasTag(nonTarget) and not v:HasTag("companion") then
+
+                    -- 毒による食料腐敗マーク（初撃で倒した場合にも対応するためGetAttackedの前に設定）
+                    if self.explosiveDotDamage > 0 then
+                        TeemoPoison.markTeemoPoisoned(v)
+                    end
 
                     -- 初撃ダメージ（GetAttackedで実ダメージ適用）
                     v.components.combat:GetAttacked(counterPlayer, self.explosiveDamage, nil)
