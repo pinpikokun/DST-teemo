@@ -138,7 +138,7 @@ configuration_options = {
             {description = "145", data = 145},
             {description = "150", data = 150},
         },
-        default = 30,
+        default = 10,
     },
     {
         name = "blind_dart_dot",
@@ -206,7 +206,7 @@ configuration_options = {
             {description = "145", data = 145},
             {description = "150", data = 150},
         },
-        default = 50,
+        default = 20,
     },
     {
         name = "noxious_trap_dot",
@@ -235,6 +235,6 @@ configuration_options = {
             {description = "95",  data = 95},
             {description = "100", data = 100},
         },
-        default = 50,
+        default = 20,
     },
 }
