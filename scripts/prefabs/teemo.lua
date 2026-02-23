@@ -1,5 +1,6 @@
 
 local MakePlayerCharacter = require ("prefabs/player_common")
+local TeemoPoison = require("teemo_poison_util")
 
 local assets = {
     Asset( "ANIM", "anim/teemo.zip" ),
@@ -240,7 +241,13 @@ local master_postinit = function(inst)
     inst:ListenForEvent("oneatsomething", function() disableCamouflage(inst) end)
     inst:ListenForEvent("oneaten", function() disableCamouflage(inst) end)
     inst:ListenForEvent("working", function() disableCamouflage(inst) end)
-    inst:ListenForEvent("onattackother", function() disableCamouflage(inst) end)
+    inst:ListenForEvent("onattackother", function(inst, data)
+        disableCamouflage(inst)
+        -- Blind Dart攻撃時、GetAttackedの前に毒マークを設定（初撃即死でも食料腐敗を適用）
+        if data and data.weapon and data.weapon:HasTag("blowdart") and data.target then
+            TeemoPoison.markTeemoPoisoned(data.target)
+        end
+    end)
     inst:ListenForEvent("attacked", onAttacked)
     inst:ListenForEvent("death", onDeath)
     inst:ListenForEvent("ms_respawnedfromghost", function()

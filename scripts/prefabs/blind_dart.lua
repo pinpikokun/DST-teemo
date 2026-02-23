@@ -1,4 +1,6 @@
-local assets = {  
+local TeemoPoison = require("teemo_poison_util")
+
+local assets = {
     Asset("ANIM", "anim/blind_dart.zip"),
 	Asset("ANIM", "anim/swap_blind_dart.zip"),
 
@@ -90,6 +92,8 @@ local function doToxicShotEndTask(target)
             target.toxicShotDamageTask = nil
         end
         target.toxicShotEndTask = nil
+        -- 毒マーク解除（他の毒DOTが残っていなければ）
+        TeemoPoison.unmarkTeemoPoisoned(target)
     end)
 end
 
@@ -102,6 +106,9 @@ local function doToxicShot(target)
     if TEEMO_BLIND_DART_DOT <= 0 then
         return
     end
+
+    -- 毒による食料腐敗マーク（冗長性のため、teemo.luaのonattackotherでもマーク済み）
+    TeemoPoison.markTeemoPoisoned(target)
 
     -- DOT発動中は効果延長のみ
     if target.toxicShotDamageTask ~= nil then
