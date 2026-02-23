@@ -264,4 +264,14 @@ configuration_options = {
         },
         default = 0.7,
     },
+    {
+        name = "mushroom_immunity",
+        label = "Mushroom Immunity",
+        hover = "Negate mushroom negative effects / キノコのデメリット無効化",
+        options = {
+            {description = "On",  data = true},
+            {description = "Off", data = false},
+        },
+        default = true,
+    },
 }

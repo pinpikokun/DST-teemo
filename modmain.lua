@@ -13,6 +13,8 @@ GLOBAL.TEEMO_NOXIOUS_TRAP_DAMAGE = GetModConfigData("noxious_trap_damage") or 20
 GLOBAL.TEEMO_NOXIOUS_TRAP_DOT = GetModConfigData("noxious_trap_dot") or 20
 GLOBAL.TEEMO_POISON_SPOIL_PERCENT = GetModConfigData("poison_spoil_percent")
 if GLOBAL.TEEMO_POISON_SPOIL_PERCENT == nil then GLOBAL.TEEMO_POISON_SPOIL_PERCENT = 0.7 end
+GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
+if GLOBAL.TEEMO_MUSHROOM_IMMUNITY == nil then GLOBAL.TEEMO_MUSHROOM_IMMUNITY = true end
 
 -- キャラクター選択画面のステータス表示用（TUNINGテーブルに登録）
 GLOBAL.TUNING.TEEMO_HEALTH = GLOBAL.TEEMO_HEALTH
@@ -28,8 +30,9 @@ local STRINGS = GLOBAL.STRINGS
 
 STRINGS.CHARACTER_TITLES.teemo = "Captain Teemo"
 STRINGS.CHARACTER_NAMES.teemo = "Captain Teemo"
-STRINGS.CHARACTER_DESCRIPTIONS.teemo = "Size doesn't mean everything."
+STRINGS.CHARACTER_DESCRIPTIONS.teemo = "*Goes invisible when standing still\n*Has a poison blowdart\n*Can deploy Noxious Traps\n*Expert at eating mushrooms"
 STRINGS.CHARACTER_QUOTES.teemo = "\"on duty !! \""
+STRINGS.CHARACTER_ABOUTME.teemo = "Size doesn't mean everything."
 STRINGS.CHARACTERS.TEEMO = GLOBAL.require "speech_teemo"
 STRINGS.NAMES.TEEMO = "Teemo"
 STRINGS.SKIN_NAMES.teemo_none = "Teemo"
@@ -110,6 +113,18 @@ AddModCharacter("teemo", "MALE", skin_modes)
 AddMinimapAtlas("images/map_icons/teemo.xml")
 
 GLOBAL.PREFAB_SKINS["teemo"] = { "teemo_none" }
+
+-- パッシブ「キノコの達人」: 月キノコの睡眠をテーモのみ無効化
+if GLOBAL.TEEMO_MUSHROOM_IMMUNITY then
+    AddPrefabPostInit("moon_cap", function(inst)
+        if not GLOBAL.TheWorld.ismastersim then return end
+        local _oneaten = inst.components.edible.oneaten
+        inst.components.edible:SetOnEatenFn(function(inst, eater)
+            if eater:HasTag("teemo") then return end
+            if _oneaten ~= nil then _oneaten(inst, eater) end
+        end)
+    end)
+end
 
 -- アイテムの名前 item name
 STRINGS.NAMES.BLIND_DART = "Blind Dart"

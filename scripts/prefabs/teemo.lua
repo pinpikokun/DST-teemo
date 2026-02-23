@@ -12,6 +12,23 @@ local NOXIOUS_TRAP_MAX_STACKS = NOXIOUS_TRAP_MAX_STACKS
 local NOXIOUS_TRAP_INITIAL_STACKS = 3
 local NOXIOUS_TRAP_RECOVERY_INTERVAL = 30
 
+-- パッシブ「キノコの達人」: キノコのマイナスステータスを無効化
+local MUSHROOM_PREFABS = {
+    red_cap = true, red_cap_cooked = true,
+    green_cap = true, green_cap_cooked = true,
+    blue_cap = true, blue_cap_cooked = true,
+    moon_cap = true, moon_cap_cooked = true,
+}
+
+local function mushroomStatsMod(inst, health_delta, hunger_delta, sanity_delta, food, feeder)
+    if food ~= nil and MUSHROOM_PREFABS[food.prefab] then
+        if health_delta < 0 then health_delta = 0 end
+        if hunger_delta < 0 then hunger_delta = 0 end
+        if sanity_delta < 0 then sanity_delta = 0 end
+    end
+    return health_delta, hunger_delta, sanity_delta
+end
+
 local start_inv = {
     "blind_dart",
     -- "sewing_kit",
@@ -230,6 +247,11 @@ local master_postinit = function(inst)
 	inst.components.sanity:SetMax(TEEMO_SANITY)
 	inst.components.combat.damagemultiplier = TEEMO_DAMAGE_MULT
 	inst.components.health:SetAbsorptionAmount(TEEMO_ABSORPTION)
+
+    -- パッシブ「キノコの達人」
+    if TEEMO_MUSHROOM_IMMUNITY then
+        inst.components.eater.custom_stats_mod_fn = mushroomStatsMod
+    end
 
     startPassive(inst)
 
