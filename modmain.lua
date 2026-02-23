@@ -126,7 +126,30 @@ AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
             end
             local trap = GLOBAL.SpawnPrefab("noxious_trap")
             local pos = player:GetPosition()
-            trap.components.deployable:Deploy(pos, player)
+
+            -- まずプレイヤー位置で配置を試みる
+            if trap.components.deployable:Deploy(pos, player) then
+                player.sg:GoToState("idle")
+                return
+            end
+
+            -- 失敗した場合、近くの有効な位置を探す
+            local offset = GLOBAL.FindWalkableOffset(pos, math.random() * GLOBAL.TWOPI, 2, 8, false, true,
+                function(pt)
+                    return trap.components.deployable:CanDeploy(pt)
+                end)
+
+            if offset ~= nil then
+                local deploy_pos = pos + offset
+                if trap.components.deployable:Deploy(deploy_pos, player) then
+                    player.sg:GoToState("idle")
+                    return
+                end
+            end
+
+            -- どこにも配置できなかった場合：スタック返還 & トラップ削除
+            player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() + 1)
+            trap:Remove()
             player.sg:GoToState("idle")
         end)
     end
