@@ -108,17 +108,8 @@ function Explosive_Noxious_Trap:OnBurnt()
                             -- 毒エフェクト
                             toxicEffect(v)
 
-                            -- ダメージ
+                            -- ダメージ（プレイヤーのみ軽減）
                             local dmg = dotDamage
-                            if v:HasTag("smallcreature") then
-                                dmg = dotDamage * 0.75
-                            end
-                            if v:HasTag("largecreature") then
-                                dmg = dotDamage * 1.75
-                            end
-                            if v:HasTag("monster") then
-                                dmg = dotDamage * 1.75
-                            end
                             if v:HasTag("player") then
                                 dmg = dotDamage * 0.35
                             end
