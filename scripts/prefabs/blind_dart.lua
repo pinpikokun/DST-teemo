@@ -98,13 +98,18 @@ local function doToxicShot(target)
         return
     end
 
+    -- DOT無効化時はスキップ
+    if TEEMO_BLIND_DART_DOT <= 0 then
+        return
+    end
+
     -- DOT発動中は効果延長のみ
     if target.toxicShotDamageTask ~= nil then
         doToxicShotEndTask(target)
         return
     end
 
-    -- 毒DOT（毎秒6ダメージ、4秒間）
+    -- 毒DOT（毎秒ダメージ、4秒間）
     target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
         if not target:IsValid() or target.components.health == nil or target.components.health.currenthealth <= 0 then
             if target.toxicShotDamageTask ~= nil then
@@ -115,7 +120,11 @@ local function doToxicShot(target)
         end
 
         toxicEffect(target)
-        target.components.health:DoDelta(-6, nil, "toxicShot")
+        local dot = TEEMO_BLIND_DART_DOT
+        if target:HasTag("player") then
+            dot = dot * 0.3
+        end
+        target.components.health:DoDelta(-dot, nil, "toxicShot")
         if target.HUD then target.HUD.bloodover:Flash() end
     end)
 
@@ -175,7 +184,7 @@ local function fn(Sim)
     -- 武器
     inst:AddComponent("weapon")
     -- ダメージ
-    inst.components.weapon:SetDamage(30)
+    inst.components.weapon:SetDamage(TEEMO_BLIND_DART_DAMAGE)
     -- 範囲（攻撃射程、ヒット射程）
     inst.components.weapon:SetRange(8, 10)
     -- 攻撃効果
