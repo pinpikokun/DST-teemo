@@ -208,6 +208,17 @@ local common_postinit = function(inst)
 	inst.MiniMapEntity:SetIcon( "teemo.tex" )
     inst:AddTag("teemo")
 
+    -- talk_LPを1回再生に変更（ループ・途中停止を防止）
+    inst:ListenForEvent("ontalk", function()
+        inst:DoTaskInTime(0, function()
+            -- ステートグラフが開始したループ再生を停止
+            inst.SoundEmitter:KillSound("talk")
+            -- 前回のボイスを停止してから1回再生
+            inst.SoundEmitter:KillSound("teemo_voice")
+            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/talk_LP", "teemo_voice")
+        end)
+    end)
+
     -- ノクサストラップ スタック数ネットワーク変数（クライアント同期用）
     inst._noxiousTrapStacks = net_byte(inst.GUID, "teemo._noxiousTrapStacks", "noxioustrapstacksdirty")
 
@@ -262,12 +273,34 @@ local master_postinit = function(inst)
     inst:ListenForEvent("ondropped", function() disableCamouflage(inst) end)
     inst:ListenForEvent("oneatsomething", function() disableCamouflage(inst) end)
     inst:ListenForEvent("oneaten", function() disableCamouflage(inst) end)
-    inst:ListenForEvent("working", function() disableCamouflage(inst) end)
+    inst:ListenForEvent("working", function()
+        disableCamouflage(inst)
+        -- 作業時に一定確率でemoteボイスを再生
+        if math.random() < 0.25 then
+            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/emote")
+        end
+    end)
+    -- 採取時に一定確率でemoteボイスを再生
+    inst:ListenForEvent("picksomething", function()
+        if math.random() < 0.25 then
+            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/emote")
+        end
+    end)
+    -- 収穫時に一定確率でemoteボイスを再生
+    inst:ListenForEvent("harvest", function()
+        if math.random() < 0.25 then
+            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/emote")
+        end
+    end)
     inst:ListenForEvent("onattackother", function(inst, data)
         disableCamouflage(inst)
         -- Blind Dart攻撃時、GetAttackedの前に毒マークを設定（初撃即死でも食料腐敗を適用）
         if data and data.weapon and data.weapon:HasTag("blowdart") and data.target then
             TeemoPoison.markTeemoPoisoned(data.target)
+        end
+        -- 攻撃時に一定確率でemoteボイスを再生
+        if math.random() < 0.25 then
+            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/emote")
         end
     end)
     inst:ListenForEvent("attacked", onAttacked)
