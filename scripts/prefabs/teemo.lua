@@ -299,7 +299,7 @@ local master_postinit = function(inst)
             TeemoPoison.markTeemoPoisoned(data.target)
         end
         -- 攻撃時に一定確率でemoteボイスを再生
-        if math.random() < 0.25 then
+        if math.random() < 0.15 then
             inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/emote")
         end
     end)
