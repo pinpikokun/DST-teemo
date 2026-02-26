@@ -222,6 +222,11 @@ local common_postinit = function(inst)
     -- ノクサストラップ スタック数ネットワーク変数（クライアント同期用）
     inst._noxiousTrapStacks = net_byte(inst.GUID, "teemo._noxiousTrapStacks", "noxioustrapstacksdirty")
 
+    -- 移動開始時にmoveボイスを再生（クライアント側）
+    inst:ListenForEvent("startmoving", function()
+        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/move")
+    end)
+
     -- 上向き攻撃時にblind_dartが体の下にはみ出る対策（クライアント側）
     inst._dartHiding = false
     inst:DoPeriodicTask(0, function()
@@ -266,6 +271,11 @@ local master_postinit = function(inst)
 
     startPassive(inst)
 
+    -- スポーン時にspwnボイスを再生
+    inst:DoTaskInTime(0.5, function()
+        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/spwn")
+    end)
+
 --    inst:ListenForEvent("performaction", function() disableCamouflage(inst) end)
     inst:ListenForEvent("buildsuccess", function() disableCamouflage(inst) end)
     inst:ListenForEvent("equipped", function() disableCamouflage(inst) end)
@@ -298,9 +308,9 @@ local master_postinit = function(inst)
         if data and data.weapon and data.weapon:HasTag("blowdart") and data.target then
             TeemoPoison.markTeemoPoisoned(data.target)
         end
-        -- 攻撃時に一定確率でemoteボイスを再生
+        -- 攻撃時に一定確率でattackボイスを再生
         if math.random() < 0.15 then
-            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/emote")
+            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/attack")
         end
     end)
     inst:ListenForEvent("attacked", onAttacked)
@@ -308,6 +318,8 @@ local master_postinit = function(inst)
     inst:ListenForEvent("ms_respawnedfromghost", function()
         startPassive(inst)
         startNoxiousTrapRecovery(inst)
+        -- リスポーン時にspwnボイスを再生
+        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/spwn")
     end)
 
     -- 最終スロットをノクサストラップ専用にする（アイテム配置を禁止）
