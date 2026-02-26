@@ -1,2 +1,0 @@
-DISABLE_MOD_WARNING = true
-MODS_ENABLED = true
