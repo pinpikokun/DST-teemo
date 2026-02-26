@@ -222,11 +222,6 @@ local common_postinit = function(inst)
     -- ノクサストラップ スタック数ネットワーク変数（クライアント同期用）
     inst._noxiousTrapStacks = net_byte(inst.GUID, "teemo._noxiousTrapStacks", "noxioustrapstacksdirty")
 
-    -- 移動開始時にmoveボイスを再生（クライアント側）
-    inst:ListenForEvent("startmoving", function()
-        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/move")
-    end)
-
     -- 上向き攻撃時にblind_dartが体の下にはみ出る対策（クライアント側）
     inst._dartHiding = false
     inst:DoPeriodicTask(0, function()

@@ -108,6 +108,13 @@ local function onDeploy(inst, pt, deployer)
 
 	startTrap(inst)
 	inst.Physics:Teleport(pt:Get())
+
+	-- 設置時にdeployerのmoveボイスを再生
+	if deployer ~= nil and deployer.SoundEmitter then
+		if math.random() < 0.5 then
+			deployer.SoundEmitter:PlaySound("dontstarve/characters/teemo/move")
+		end
+	end
 end
 
 local function onLoad(inst, data)
