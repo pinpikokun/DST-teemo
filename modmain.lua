@@ -89,16 +89,19 @@ Assets = {
     Asset( "IMAGE", "images/hud/teemotab.tex" ),
    	Asset( "ATLAS", "images/hud/teemotab.xml" ),
 
-    Asset("SOUNDPACKAGE", "sound/teemo.fev"),
-    Asset("SOUND", "sound/teemo.fsb"),
+    Asset("SOUNDPACKAGE", "sound/DST-teemo.fev"),
+    Asset("SOUND", "sound/DST-teemo_bank00.fsb"),
     
 }
 
-RemapSoundEvent( "dontstarve/characters/teemo/death_voice", "teemo/characters/teemo/death_voice" )
-RemapSoundEvent( "dontstarve/characters/teemo/hurt", "teemo/characters/teemo/hurt" )
-RemapSoundEvent( "dontstarve/characters/teemo/talk_LP", "teemo/characters/teemo/talk_LP" )
-RemapSoundEvent( "dontstarve/characters/teemo/emote", "teemo/characters/teemo/emote" )
-RemapSoundEvent( "dontstarve/characters/teemo/ghost_LP", "teemo/characters/teemo/ghost_LP" )
+RemapSoundEvent( "dontstarve/characters/teemo/death_voice", "DST-teemo/dontstarve/characters/DST-teemo/death_voice" )
+RemapSoundEvent( "dontstarve/characters/teemo/hurt", "DST-teemo/dontstarve/characters/DST-teemo/hurt" )
+RemapSoundEvent( "dontstarve/characters/teemo/talk_LP", "DST-teemo/dontstarve/characters/DST-teemo/talk_LP" )
+RemapSoundEvent( "dontstarve/characters/teemo/emote", "DST-teemo/dontstarve/characters/DST-teemo/emote" )
+RemapSoundEvent( "dontstarve/characters/teemo/ghost_LP", "DST-teemo/dontstarve/characters/DST-teemo/ghost_LP" )
+RemapSoundEvent( "dontstarve/characters/teemo/move", "DST-teemo/dontstarve/characters/DST-teemo/move" )
+RemapSoundEvent( "dontstarve/characters/teemo/spwn", "DST-teemo/dontstarve/characters/DST-teemo/spwn" )
+RemapSoundEvent( "dontstarve/characters/teemo/attack", "DST-teemo/dontstarve/characters/DST-teemo/attack" )
 
 local skin_modes = {
     {
