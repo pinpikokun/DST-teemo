@@ -15,19 +15,21 @@ local function onequip(inst, owner)
     owner.AnimState:Hide("ARM_normal")
     owner:AddTag("blind_dart_equipped")
 
-    -- 敵の攻撃を受けたときに耐久力を減らす
-    inst._onowner_attacked = function(owner, data)
-        if not inst:IsValid() then return end
-        if data and data.attacker and data.attacker:IsValid()
-            and data.attacker.components.combat
-            and inst.components.finiteuses then
-            local cur = inst.components.finiteuses:GetUses()
-            if cur > 0 then
-                inst.components.finiteuses:SetUses(cur - 1)
+    -- 敵の攻撃を受けたときに耐久力を減らす（耐久度が無効なら登録しない）
+    if inst.components.finiteuses then
+        inst._onowner_attacked = function(owner, data)
+            if not inst:IsValid() then return end
+            if data and data.attacker and data.attacker:IsValid()
+                and data.attacker.components.combat
+                and inst.components.finiteuses then
+                local cur = inst.components.finiteuses:GetUses()
+                if cur > 0 then
+                    inst.components.finiteuses:SetUses(cur - 1)
+                end
             end
         end
+        owner:ListenForEvent("attacked", inst._onowner_attacked)
     end
-    owner:ListenForEvent("attacked", inst._onowner_attacked)
 end
 
 local function onunequip(inst, owner)
