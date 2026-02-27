@@ -152,8 +152,9 @@ AddRecipe2("blind_dart", {
     tab = teemoTab,
 }, {"CHARACTER"})
 
--- アイテムの名前 item name
+-- アイテムの名前・レシピ説明
 STRINGS.NAMES.BLIND_DART = "Blind Dart"
+STRINGS.RECIPE_DESC.BLIND_DART = "A toxic blowdart that blinds enemies.\nLoses durability when hit while equipped."
 
 -- アイテムの名前 item name
 STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"

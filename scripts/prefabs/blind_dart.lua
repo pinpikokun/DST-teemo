@@ -17,16 +17,13 @@ local function onequip(inst, owner)
 
     -- 敵の攻撃を受けたときに耐久力を減らす
     inst._onowner_attacked = function(owner, data)
+        if not inst:IsValid() then return end
         if data and data.attacker and data.attacker:IsValid()
             and data.attacker.components.combat
-            and inst._durability then
-            inst._durability = inst._durability - 1
-            if inst._durability <= 0 then
-                -- 装備解除してから破壊
-                if owner.components.inventory then
-                    owner.components.inventory:Unequip(EQUIPSLOTS.HANDS)
-                end
-                inst:Remove()
+            and inst.components.finiteuses then
+            local cur = inst.components.finiteuses:GetUses()
+            if cur > 0 then
+                inst.components.finiteuses:SetUses(cur - 1)
             end
         end
     end
@@ -234,10 +231,15 @@ local function fn(Sim)
     -- 幽霊の攻撃（ハウント）時の処理？
     -- MakeHauntableLaunchAndPerish(inst)
 
-    -- 耐久力（敵に攻撃されると減る、10回で破壊）
-    -- finiteusesは攻撃時にも自動消費されるため、独自管理を使用
-    inst._durability = 10
-    inst._max_durability = 10
+    -- 耐久力（敵に攻撃されると減る、3回で破壊）
+    inst:AddComponent("finiteuses")
+    inst.components.finiteuses:SetMaxUses(3)
+    inst.components.finiteuses:SetUses(3)
+    inst.components.finiteuses:SetOnFinished(function(inst)
+        inst:DoTaskInTime(0, function() inst:Remove() end)
+    end)
+    -- 攻撃時の自動消費を無効化（被ダメージ時のみ手動で減少させる）
+    inst.components.finiteuses:SetIgnoreCombatDurabilityLoss(true)
 
     -- 装備
     inst:AddComponent("equippable")
