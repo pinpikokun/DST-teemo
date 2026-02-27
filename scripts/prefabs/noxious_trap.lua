@@ -110,9 +110,9 @@ local function onDeploy(inst, pt, deployer)
 	inst.Physics:Teleport(pt:Get())
 
 	-- 設置時にdeployerのmoveボイスを再生
-	if deployer ~= nil and deployer.SoundEmitter then
+	if deployer ~= nil and deployer._sound_move then
 		if math.random() < 0.5 then
-			deployer.SoundEmitter:PlaySound("dontstarve/characters/teemo/move")
+			deployer._sound_move:push()
 		end
 	end
 end
