@@ -1,53 +1,58 @@
 # CLAUDE.md
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+このファイルは Claude Code (claude.ai/code) がこのリポジトリで作業する際のガイドです。
 
-## Project Overview
+## プロジェクト概要
 
-Don't Starve Together (DST) character mod — "Captain Teemo" (League of Legends character). Published on Steam Workshop (ID: 390684095). Written in Lua, interpreted directly by the DST game engine — no build step, no tests, no CI.
+Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League of Legends のキャラクター）。Steam Workshop で公開中（ID: 390684095）。Lua で記述、DST のゲームエンジンが直接解釈する — ビルド不要、テストなし、CI なし。
 
-- **DST API version:** 10
-- **Mod version:** 0.2.2.3
-- **All clients require this mod** to play together
+- **DST API バージョン:** 10
+- **MOD バージョン:** 0.2.2.3
+- **全クライアントにこのMODが必要**
 
-## Architecture
+## アーキテクチャ
 
-### Entry Points
+### エントリポイント
 
-- **modinfo.lua** — Mod metadata (name, version, compatibility flags)
-- **modmain.lua** — Main entry point: loads assets, defines recipes, registers the character via `AddModCharacter("teemo", "MALE")`
+- **modinfo.lua** — MODメタデータ（名前、バージョン、互換性フラグ）
+- **modmain.lua** — メインエントリポイント: アセット読み込み、レシピ定義、`AddModCharacter("teemo", "MALE")` でキャラクター登録
 
-### Scripts
+### スクリプト
 
-- **scripts/prefabs/teemo.lua** — Character definition with three core mechanics:
-  - *Camouflage* — invisibility after standing still 2+ seconds (sanity > 30%), grants speed boost
-  - *Toxic Shot* — poison on attack (10 hit damage + 6/s DOT for 4 seconds)
-  - *Starting inventory* setup
-- **scripts/prefabs/blind_dart.lua** — Ranged weapon (blowgun-type), 10 uses, rechargeable with mushrooms via Trader component. Character-restricted to Teemo.
-- **scripts/prefabs/noxious_trap.lua** — Deployable trap, 10-minute lifespan, AoE damage with slow debuff. PvP-aware activation logic.
-- **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — Visual effect prefabs that attach to target entities as children
-- **scripts/components/characterspecific.lua** — Restricts item equipping to Teemo only
-- **scripts/components/explosive_noxious_trap.lua** — Handles trap explosion: AoE entity search, damage calculation by creature tag, slow debuff application
-- **scripts/speech_teemo.lua** — Character dialogue strings (~46KB)
+- **scripts/prefabs/teemo.lua** — キャラクター定義。主要な能力:
+  - *Camouflage* — 1.5秒静止で透明化、敵の攻撃すり抜け、解除時に攻撃速度UP
+  - *Toxic Shot* — 攻撃時の毒DOT（初撃ダメージ + 毎秒DOT × 4秒間）
+  - *Noxious Trap スタック管理* — 専用スロットからの罠設置（初期3個、30秒で回復、最大5）
+  - *Mushroom Expert* — キノコのマイナスステータス無効化
+  - *初期インベントリ* セットアップ
+- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ）。ブラインド効果 + 毒DOT。テーモ専用。
+- **scripts/prefabs/noxious_trap.lua** — 設置型トラップ。5分の寿命、AoEダメージ + スローデバフ。PvP対応の起爆ロジック。最大10個設置。
+- **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — ターゲットエンティティに子としてアタッチするビジュアルエフェクト
+- **scripts/components/characterspecific.lua** — テーモ専用のアイテム装備制限
+- **scripts/components/explosive_noxious_trap.lua** — トラップ爆発処理: AoEエンティティ検索、クリーチャータグ別ダメージ計算、スローデバフ適用
+- **scripts/teemo_poison_util.lua** — 毒による食料腐敗ユーティリティ（毒状態で死んだ敵のドロップ食料の鮮度低下）
+- **scripts/widgets/noxioustrap_slot.lua** — ノクサストラップ専用インベントリスロットUI
+- **scripts/components/lootdropper.lua, perishable.lua** — DST標準コンポーネントの上書き
+- **scripts/speech_teemo.lua** — キャラクターセリフ文字列（約46KB）
 
-### Assets
+### アセット
 
-- **anim/** — Animation ZIP archives (character, items, effects)
-- **images/** — Texture (.tex) and atlas (.xml) pairs organized by UI context (portraits, avatars, inventory icons, HUD, map icons)
-- **sound/** — FMOD sound bank (.fev + .fsb)
+- **anim/** — アニメーションZIPアーカイブ（キャラクター、アイテム、エフェクト）
+- **images/** — テクスチャ (.tex) とアトラス (.xml) のペア。UIコンテキスト別に整理（ポートレート、アバター、インベントリアイコン、HUD、マップアイコン）
+- **sound/** — FMOD サウンドバンク (.fev + .fsb)
 
-## DST Modding Patterns Used
+## DST MOD開発パターン
 
-**Prefab pattern:** Each game entity is a prefab defined by a `fn(Sim)` function that creates/configures an entity, returned via `Prefab("path/name", fn, assets)`.
+**Prefab パターン:** 各ゲームエンティティは `fn(Sim)` 関数で定義された prefab。`Prefab("path/name", fn, assets)` で返す。
 
-**Component pattern:** Custom components use `Class(function(self, inst) ... end)` with methods defined as `ComponentName:Method()`.
+**Component パターン:** カスタムコンポーネントは `Class(function(self, inst) ... end)` を使用。メソッドは `ComponentName:Method()` で定義。
 
-**Server/client split:** `common_postinit` runs on all clients (visuals/UI), `master_postinit` runs on server only (game logic). Guard server-only code with `if not TheWorld.ismastersim then return inst end`.
+**サーバー/クライアント分離:** `common_postinit` は全クライアントで実行（ビジュアル/UI）、`master_postinit` はサーバーのみ（ゲームロジック）。サーバー専用コードは `if not TheWorld.ismastersim then return inst end` でガード。
 
-**Event-driven:** Game logic responds to events (`inst:ListenForEvent("eventname", callback)`). Common events: `equipped`, `onattackother`, `attacked`, `death`.
+**イベント駆動:** ゲームロジックはイベントに応答（`inst:ListenForEvent("eventname", callback)`）。主なイベント: `equipped`, `onattackother`, `attacked`, `death`。
 
-**Task system:** `inst:DoPeriodicTask(interval, fn)` for repeating logic, `inst:DoTaskInTime(delay, fn)` for delayed execution. Cancel with `task:Cancel()`.
+**タスクシステム:** `inst:DoPeriodicTask(interval, fn)` で繰り返し処理、`inst:DoTaskInTime(delay, fn)` で遅延実行。`task:Cancel()` でキャンセル。
 
-## Notes
+## 備考
 
-- Comments are mixed English and Japanese
+- コメントは英語と日本語が混在
