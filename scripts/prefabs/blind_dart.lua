@@ -14,12 +14,35 @@ local function onequip(inst, owner)
     owner.AnimState:Show("ARM_carry")
     owner.AnimState:Hide("ARM_normal")
     owner:AddTag("blind_dart_equipped")
+
+    -- 敵の攻撃を受けたときに耐久力を減らす
+    inst._onowner_attacked = function(owner, data)
+        if data and data.attacker and data.attacker:IsValid()
+            and data.attacker.components.combat
+            and inst._durability then
+            inst._durability = inst._durability - 1
+            if inst._durability <= 0 then
+                -- 装備解除してから破壊
+                if owner.components.inventory then
+                    owner.components.inventory:Unequip(EQUIPSLOTS.HANDS)
+                end
+                inst:Remove()
+            end
+        end
+    end
+    owner:ListenForEvent("attacked", inst._onowner_attacked)
 end
 
 local function onunequip(inst, owner)
     owner.AnimState:Hide("ARM_carry")
     owner.AnimState:Show("ARM_normal")
     owner:RemoveTag("blind_dart_equipped")
+
+    -- リスナー解除
+    if inst._onowner_attacked then
+        owner:RemoveEventCallback("attacked", inst._onowner_attacked)
+        inst._onowner_attacked = nil
+    end
 end
 
 local function doBlindEffect(target)
@@ -206,10 +229,15 @@ local function fn(Sim)
     inst:AddComponent("inventoryitem")
     -- インベントリの見た目
 	inst.components.inventoryitem.atlasname = "images/inventoryimages/blind_dart.xml"
-    inst.components.inventoryitem.keepondeath = true
+    -- inst.components.inventoryitem.keepondeath = false (default)
 
     -- 幽霊の攻撃（ハウント）時の処理？
     -- MakeHauntableLaunchAndPerish(inst)
+
+    -- 耐久力（敵に攻撃されると減る、10回で破壊）
+    -- finiteusesは攻撃時にも自動消費されるため、独自管理を使用
+    inst._durability = 10
+    inst._max_durability = 10
 
     -- 装備
     inst:AddComponent("equippable")
