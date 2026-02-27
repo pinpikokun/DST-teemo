@@ -129,21 +129,28 @@ if GLOBAL.TEEMO_MUSHROOM_IMMUNITY then
     end)
 end
 
--- ブラインドダート クラフトレシピ（テーモ専用）
-local Ingredient = GLOBAL.Ingredient
-local TECH = GLOBAL.TECH
+-- テーモ専用クラフトタブ
+local teemoTab = AddRecipeTab(
+    "Teemo Items"
+    ,998
+    ,GLOBAL.resolvefilepath("images/hud/teemotab.xml")
+    ,"teemotab.tex"
+    ,"teemo"
+)
 
+-- ブラインドダート クラフトレシピ（テーモ専用）
 AddRecipe2("blind_dart", {
-    Ingredient("boards", 1),
-    Ingredient("green_cap", 1),
-    Ingredient("silk", 1),
-    Ingredient("stinger", 1),
-    Ingredient("rope", 1),
-}, TECH.NONE, {
-    atlas = "images/inventoryimages/blind_dart.xml",
+    GLOBAL.Ingredient("boards", 1),
+    GLOBAL.Ingredient("green_cap", 1),
+    GLOBAL.Ingredient("silk", 1),
+    GLOBAL.Ingredient("stinger", 1),
+    GLOBAL.Ingredient("rope", 1),
+}, GLOBAL.TECH.NONE, {
+    atlas = GLOBAL.resolvefilepath("images/inventoryimages/blind_dart.xml"),
     image = "blind_dart.tex",
     builder_tag = "teemo",
-})
+    tab = teemoTab,
+}, {"CHARACTER"})
 
 -- アイテムの名前 item name
 STRINGS.NAMES.BLIND_DART = "Blind Dart"
