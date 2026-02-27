@@ -29,7 +29,7 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 
 ## Configuration
 
-Customize **12 settings** from the server config — stats, damage, skill values, and more.
+Customize **13 settings** from the server config — stats, damage, skill values, and more.
 Make Teemo your own.
 
 > [!IMPORTANT]

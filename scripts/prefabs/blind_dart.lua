@@ -231,15 +231,17 @@ local function fn(Sim)
     -- 幽霊の攻撃（ハウント）時の処理？
     -- MakeHauntableLaunchAndPerish(inst)
 
-    -- 耐久力（敵に攻撃されると減る、3回で破壊）
-    inst:AddComponent("finiteuses")
-    inst.components.finiteuses:SetMaxUses(3)
-    inst.components.finiteuses:SetUses(3)
-    inst.components.finiteuses:SetOnFinished(function(inst)
-        inst:DoTaskInTime(0, function() inst:Remove() end)
-    end)
-    -- 攻撃時の自動消費を無効化（被ダメージ時のみ手動で減少させる）
-    inst.components.finiteuses:SetIgnoreCombatDurabilityLoss(true)
+    -- 耐久力（敵に攻撃されると減る、設定値で破壊。0 = 壊れない）
+    if TEEMO_BLIND_DART_DURABILITY > 0 then
+        inst:AddComponent("finiteuses")
+        inst.components.finiteuses:SetMaxUses(TEEMO_BLIND_DART_DURABILITY)
+        inst.components.finiteuses:SetUses(TEEMO_BLIND_DART_DURABILITY)
+        inst.components.finiteuses:SetOnFinished(function(inst)
+            inst:DoTaskInTime(0, function() inst:Remove() end)
+        end)
+        -- 攻撃時の自動消費を無効化（被ダメージ時のみ手動で減少させる）
+        inst.components.finiteuses:SetIgnoreCombatDurabilityLoss(true)
+    end
 
     -- 装備
     inst:AddComponent("equippable")

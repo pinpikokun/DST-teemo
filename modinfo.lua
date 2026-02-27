@@ -265,6 +265,21 @@ configuration_options = {
         default = 0.7,
     },
     {
+        name = "blind_dart_durability",
+        label = "Blind Dart Durability",
+        hover = "Hits before Blind Dart breaks (0 = unbreakable) / ブラインドダートが壊れるまでの被弾数（0 = 壊れない）",
+        options = {
+            {description = "Off",  data = 0},
+            {description = "1",    data = 1},
+            {description = "2",    data = 2},
+            {description = "3",    data = 3},
+            {description = "5",    data = 5},
+            {description = "7",    data = 7},
+            {description = "10",   data = 10},
+        },
+        default = 3,
+    },
+    {
         name = "mushroom_immunity",
         label = "Mushroom Immunity",
         hover = "Negate mushroom negative effects / キノコのデメリット無効化",
