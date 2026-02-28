@@ -56,7 +56,7 @@ local function doCamouflage(inst)
         -- ステルス中、敵の攻撃を継続的にブロック（ターゲットは維持）
         local function blankNearbyAttacks()
             local x,y,z = inst.Transform:GetWorldPosition()
-            local ents = TheSim:FindEntities(x, y, z, 20)
+            local ents = TheSim:FindEntities(x, y, z, 20, {"_combat"})
             for k,v in pairs(ents) do
                 if v.components.combat and v.components.combat.target == inst then
                     v.components.combat:BlankOutAttacks(1)
