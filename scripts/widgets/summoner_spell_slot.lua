@@ -94,26 +94,30 @@ function SummonerSpellSlot:StartFlashTargeting()
     end
     self._flashTargeting = true
 
-    -- レティクル（地面マーカー）を生成
-    local reticule = CreateEntity()
-    reticule.entity:AddTransform()
-    reticule.entity:AddAnimState()
-    reticule:AddTag("FX")
-    reticule:AddTag("NOCLICK")
-    reticule.persists = false
-    -- deploy_marker のアニメーションを流用（半透明の青い円）
-    reticule.AnimState:SetBank("deploy_indicator")
-    reticule.AnimState:SetBuild("deploy_indicator")
-    reticule.AnimState:PlayAnimation("idle", true)
-    reticule.AnimState:SetMultColour(0.3, 0.5, 1.0, 0.6)
+    -- レティクル（地面マーカー）を生成 — DST標準のAoEターゲティング円を使用
+    local reticule = SpawnPrefab("reticuleaoe")
+    reticule.AnimState:SetScale(0.5, 0.5, 0.5)
+    reticule.AnimState:SetMultColour(0.3, 0.7, 1.0, 1)
+    reticule.AnimState:SetBloomEffectHandle("shaders/anim.ksh")
     self._reticule = reticule
 
-    -- マウス移動でレティクル位置を更新
+    -- マウス移動でレティクル位置を更新 + 範囲外なら赤色に変更
+    local maxRange = TEEMO_FLASH_RANGE or 8
     self._moveHandler = TheInput:AddMoveHandler(function(x, y)
-        if self._reticule and self._reticule:IsValid() then
+        if self._reticule and self._reticule:IsValid() and self.owner:IsValid() then
             local pos = TheInput:GetWorldPosition()
             if pos then
                 self._reticule.Transform:SetPosition(pos.x, 0, pos.z)
+                local px, py, pz = self.owner.Transform:GetWorldPosition()
+                local dx, dz = pos.x - px, pos.z - pz
+                local dist = math.sqrt(dx * dx + dz * dz)
+                if dist <= maxRange then
+                    -- 範囲内: 青
+                    self._reticule.AnimState:SetMultColour(0.3, 0.7, 1.0, 1)
+                else
+                    -- 範囲外: 赤
+                    self._reticule.AnimState:SetMultColour(1.0, 0.2, 0.2, 1)
+                end
             end
         end
     end)
@@ -123,6 +127,13 @@ function SummonerSpellSlot:StartFlashTargeting()
     if initPos and self._reticule:IsValid() then
         self._reticule.Transform:SetPosition(initPos.x, 0, initPos.z)
     end
+
+    -- ESCキーでキャンセル
+    self._keyHandler = TheInput:AddKeyUpHandler(KEY_ESCAPE, function()
+        if self._flashTargeting then
+            self:StopFlashTargeting()
+        end
+    end)
 
     -- マウスクリックでテレポート or キャンセル
     self._clickHandler = TheInput:AddMouseButtonHandler(function(button, down, x, y)
@@ -159,6 +170,10 @@ function SummonerSpellSlot:StopFlashTargeting()
     if self._clickHandler then
         self._clickHandler:Remove()
         self._clickHandler = nil
+    end
+    if self._keyHandler then
+        self._keyHandler:Remove()
+        self._keyHandler = nil
     end
 end
 

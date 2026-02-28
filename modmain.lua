@@ -19,11 +19,11 @@ GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
 if GLOBAL.TEEMO_MUSHROOM_IMMUNITY == nil then GLOBAL.TEEMO_MUSHROOM_IMMUNITY = true end
 
 -- サモナースペル設定値
-GLOBAL.TEEMO_FLASH_COOLDOWN = GetModConfigData("flash_cooldown") or 300
-GLOBAL.TEEMO_FLASH_RANGE = GetModConfigData("flash_range") or 8
-GLOBAL.TEEMO_IGNITE_COOLDOWN = GetModConfigData("ignite_cooldown") or 180
+GLOBAL.TEEMO_FLASH_COOLDOWN = 3   -- TODO: テスト用、本番では300に戻す
+GLOBAL.TEEMO_FLASH_RANGE = 8
+GLOBAL.TEEMO_IGNITE_COOLDOWN = 3  -- TODO: テスト用、本番では180に戻す
 GLOBAL.TEEMO_IGNITE_DAMAGE = GetModConfigData("ignite_damage") or 20
-GLOBAL.TEEMO_IGNITE_RANGE = GetModConfigData("ignite_range") or 6
+GLOBAL.TEEMO_IGNITE_RANGE = 4
 
 -- 予約スロット数（ノクサストラップ + フラッシュ + イグナイト）
 GLOBAL.TEEMO_RESERVED_SLOTS = 3
@@ -191,15 +191,40 @@ AddModRPCHandler("teemo", "use_flash", function(player, x, z)
         tz = pz + dz * ratio
     end
 
-    -- 目的地が歩行可能か
+    -- 目的地が歩行不可の場合の壁抜け判定（LoL準拠）
     if not GLOBAL.TheWorld.Map:IsPassableAtPoint(tx, 0, tz) then
-        -- 歩行可能なオフセットを探す
-        local offset = GLOBAL.FindWalkableOffset(GLOBAL.Vector3(tx, 0, tz), math.random() * GLOBAL.TWOPI, 1, 8, false, true)
-        if offset ~= nil then
-            tx = tx + offset.x
-            tz = tz + offset.z
-        else
-            return -- 有効な位置がない
+        local dir_x, dir_z = dx, dz
+        local len = math.sqrt(dir_x * dir_x + dir_z * dir_z)
+        if len > 0 then
+            dir_x, dir_z = dir_x / len, dir_z / len
+        end
+
+        -- 1. 壁抜け: 目標地点からさらに同じ方向に3ユニット先まで歩行可能地点を探す
+        local wallFlashFound = false
+        local checkDist = math.min(dist, maxRange)
+        for d = checkDist + 0.5, checkDist + 3, 0.5 do
+            local cx = px + dir_x * d
+            local cz = pz + dir_z * d
+            if GLOBAL.TheWorld.Map:IsPassableAtPoint(cx, 0, cz) then
+                tx, tz = cx, cz
+                wallFlashFound = true
+                break
+            end
+        end
+
+        -- 2. 壁抜けできなければ手前の歩行可能地点にフォールバック
+        if not wallFlashFound then
+            local found = false
+            for d = checkDist, 0.5, -0.5 do
+                local cx = px + dir_x * d
+                local cz = pz + dir_z * d
+                if GLOBAL.TheWorld.Map:IsPassableAtPoint(cx, 0, cz) then
+                    tx, tz = cx, cz
+                    found = true
+                    break
+                end
+            end
+            if not found then return end
         end
     end
 
@@ -227,6 +252,8 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
     -- playerタグ除外（PvP時はteemoのみ除外）
     local nonTarget = GLOBAL.TheNet:GetPVPEnabled() and "teemo" or "player"
 
+    -- 敵意のある対象のみ収集（プレイヤーをターゲットしている or hostile タグ持ち）
+    local targets = {}
     local ents = GLOBAL.TheSim:FindEntities(x, y, z, range, {"_combat"})
     for _, v in pairs(ents) do
         if v ~= player
@@ -234,59 +261,74 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
             and not v:HasTag(nonTarget)
             and not v:HasTag("companion")
             and v.components.health
-            and v.components.health.currenthealth > 0 then
+            and v.components.health.currenthealth > 0
+            and (v:HasTag("hostile")
+                or (v.components.combat.target == player)) then
+            table.insert(targets, v)
+        end
+    end
 
-            -- 炎上エフェクト（burnable持ちなら着火、なければビジュアルのみ）
-            if v.components.burnable ~= nil and not v.components.burnable:IsBurning() and not v:HasTag("fireimmune") then
-                v.components.burnable:Ignite(nil, player)
-            end
+    -- 敵意のある対象がいなければ発動しない（CD・エフェクト・音なし）
+    if #targets == 0 then return end
 
-            -- トゥルーダメージDOT（毎秒 × 5秒間、防御無視でヘルス直接減算）
-            local dmg = GLOBAL.TEEMO_IGNITE_DAMAGE
-            if v:HasTag("player") then
-                dmg = dmg * 0.3
-            end
+    for _, v in ipairs(targets) do
+        -- 炎上エフェクト（burnable持ちなら着火、なければビジュアルのみ）
+        if v.components.burnable ~= nil and not v.components.burnable:IsBurning() and not v:HasTag("fireimmune") then
+            v.components.burnable:Ignite(nil, player)
+        end
 
-            -- 既存のイグナイトDOTがあればキャンセル
-            if v._igniteDotTask ~= nil then
-                v._igniteDotTask:Cancel()
-                v._igniteDotTask = nil
-            end
-            if v._igniteDotEndTask ~= nil then
-                v._igniteDotEndTask:Cancel()
-                v._igniteDotEndTask = nil
-            end
+        -- 敵に炎の飛沫エフェクト
+        local hitfx = GLOBAL.SpawnPrefab("firesplash_fx")
+        if hitfx ~= nil then
+            local vx, vy, vz = v.Transform:GetWorldPosition()
+            hitfx.Transform:SetPosition(vx, vy, vz)
+        end
 
-            v._igniteDotTask = v:DoPeriodicTask(1.0, function()
-                if not v:IsValid() or v.components.health == nil or v.components.health.currenthealth <= 0 then
-                    if v._igniteDotTask ~= nil then
-                        v._igniteDotTask:Cancel()
-                        v._igniteDotTask = nil
-                    end
-                    return
-                end
-                -- トゥルーダメージ（DoDelta で直接HP減算、防御無視）
-                v.components.health:DoDelta(-dmg, nil, "ignite")
-                if v.HUD then v.HUD.bloodover:Flash() end
-            end)
+        -- トゥルーダメージDOT（毎秒 × 5秒間、防御無視でヘルス直接減算）
+        local dmg = GLOBAL.TEEMO_IGNITE_DAMAGE
+        if v:HasTag("player") then
+            dmg = dmg * 0.3
+        end
 
-            -- 5秒後にDOT停止
-            v._igniteDotEndTask = v:DoTaskInTime(5.0, function()
+        -- 既存のイグナイトDOTがあればキャンセル
+        if v._igniteDotTask ~= nil then
+            v._igniteDotTask:Cancel()
+            v._igniteDotTask = nil
+        end
+        if v._igniteDotEndTask ~= nil then
+            v._igniteDotEndTask:Cancel()
+            v._igniteDotEndTask = nil
+        end
+
+        v._igniteDotTask = v:DoPeriodicTask(1.0, function()
+            if not v:IsValid() or v.components.health == nil or v.components.health.currenthealth <= 0 then
                 if v._igniteDotTask ~= nil then
                     v._igniteDotTask:Cancel()
                     v._igniteDotTask = nil
                 end
-                v._igniteDotEndTask = nil
-            end)
-        end
+                return
+            end
+            -- トゥルーダメージ（DoDelta で直接HP減算、防御無視）
+            v.components.health:DoDelta(-dmg, nil, "ignite")
+            if v.HUD then v.HUD.bloodover:Flash() end
+        end)
+
+        -- 5秒後にDOT停止
+        v._igniteDotEndTask = v:DoTaskInTime(5.0, function()
+            if v._igniteDotTask ~= nil then
+                v._igniteDotTask:Cancel()
+                v._igniteDotTask = nil
+            end
+            v._igniteDotEndTask = nil
+        end)
     end
 
-    -- 発動エフェクト（プレイヤー位置に炎エフェクト）
-    local fx = GLOBAL.SpawnPrefab("fire")
-    if fx ~= nil then
-        fx.Transform:SetPosition(x, y, z)
-        fx:DoTaskInTime(1.5, function() if fx:IsValid() then fx:Remove() end end)
+    -- 発動エフェクト（プレイヤー位置に炎リング + 発動音）
+    local ringfx = GLOBAL.SpawnPrefab("firesplash_fx")
+    if ringfx ~= nil then
+        ringfx.Transform:SetPosition(x, y, z)
     end
+    player.SoundEmitter:PlaySound("dontstarve/common/fireBurstLarge")
 
     -- クールダウン開始
     player._igniteCooldown:set(GLOBAL.TEEMO_IGNITE_COOLDOWN)
