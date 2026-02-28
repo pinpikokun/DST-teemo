@@ -238,7 +238,7 @@ AddModRPCHandler("teemo", "use_flash", function(player, x, z)
     player:AddTag("busy")
 
     -- 出発エフェクト
-    local puff = GLOBAL.SpawnPrefab("sand_puff")
+    local puff = GLOBAL.SpawnPrefab("shadow_puff")
     if puff ~= nil then
         puff.Transform:SetPosition(px, py, pz)
     end
