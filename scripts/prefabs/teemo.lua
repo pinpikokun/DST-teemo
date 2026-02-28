@@ -117,6 +117,12 @@ local function checkCamouflage(inst)
         return
     end
 
+    -- 騎乗中はカモフラージュを無効化（ビーファロー、Woby、MOD追加マウント全対応）
+    if inst.components.rider ~= nil and inst.components.rider:IsRiding() then
+        disableCamouflage(inst)
+        return
+    end
+
     if inst.components.health.currenthealth < inst.camouflage_h then
         disableCamouflage(inst)
         return
