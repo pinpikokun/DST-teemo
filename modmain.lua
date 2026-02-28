@@ -252,8 +252,9 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
     -- playerタグ除外（PvP時はteemoのみ除外）
     local nonTarget = GLOBAL.TheNet:GetPVPEnabled() and "teemo" or "player"
 
-    -- 敵意のある対象のみ収集（プレイヤーをターゲットしている or hostile タグ持ち）
-    local targets = {}
+    -- 敵意のある対象から最も近い単体を選択
+    local target = nil
+    local closestDist = math.huge
     local ents = GLOBAL.TheSim:FindEntities(x, y, z, range, {"_combat"})
     for _, v in pairs(ents) do
         if v ~= player
@@ -264,64 +265,69 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
             and v.components.health.currenthealth > 0
             and (v:HasTag("hostile")
                 or (v.components.combat.target == player)) then
-            table.insert(targets, v)
+            local vx, vy, vz = v.Transform:GetWorldPosition()
+            local d = (vx - x) * (vx - x) + (vz - z) * (vz - z)
+            if d < closestDist then
+                closestDist = d
+                target = v
+            end
         end
     end
 
     -- 敵意のある対象がいなければ発動しない（CD・エフェクト・音なし）
-    if #targets == 0 then return end
+    if target == nil then return end
 
-    for _, v in ipairs(targets) do
-        -- 炎上エフェクト（burnable持ちなら着火、なければビジュアルのみ）
-        if v.components.burnable ~= nil and not v.components.burnable:IsBurning() and not v:HasTag("fireimmune") then
-            v.components.burnable:Ignite(nil, player)
-        end
+    local v = target
 
-        -- 敵に炎の飛沫エフェクト
-        local hitfx = GLOBAL.SpawnPrefab("firesplash_fx")
-        if hitfx ~= nil then
-            local vx, vy, vz = v.Transform:GetWorldPosition()
-            hitfx.Transform:SetPosition(vx, vy, vz)
-        end
+    -- 炎上エフェクト（burnable持ちなら着火、なければビジュアルのみ）
+    if v.components.burnable ~= nil and not v.components.burnable:IsBurning() and not v:HasTag("fireimmune") then
+        v.components.burnable:Ignite(nil, player)
+    end
 
-        -- トゥルーダメージDOT（毎秒 × 5秒間、防御無視でヘルス直接減算）
-        local dmg = GLOBAL.TEEMO_IGNITE_DAMAGE
-        if v:HasTag("player") then
-            dmg = dmg * 0.3
-        end
+    -- 敵に炎の飛沫エフェクト
+    local hitfx = GLOBAL.SpawnPrefab("firesplash_fx")
+    if hitfx ~= nil then
+        local vx, vy, vz = v.Transform:GetWorldPosition()
+        hitfx.Transform:SetPosition(vx, vy, vz)
+    end
 
-        -- 既存のイグナイトDOTがあればキャンセル
-        if v._igniteDotTask ~= nil then
-            v._igniteDotTask:Cancel()
-            v._igniteDotTask = nil
-        end
-        if v._igniteDotEndTask ~= nil then
-            v._igniteDotEndTask:Cancel()
-            v._igniteDotEndTask = nil
-        end
+    -- トゥルーダメージDOT（毎秒 × 5秒間、防御無視でヘルス直接減算）
+    local dmg = GLOBAL.TEEMO_IGNITE_DAMAGE
+    if v:HasTag("player") then
+        dmg = dmg * 0.3
+    end
 
-        v._igniteDotTask = v:DoPeriodicTask(1.0, function()
-            if not v:IsValid() or v.components.health == nil or v.components.health.currenthealth <= 0 then
-                if v._igniteDotTask ~= nil then
-                    v._igniteDotTask:Cancel()
-                    v._igniteDotTask = nil
-                end
-                return
-            end
-            -- トゥルーダメージ（DoDelta で直接HP減算、防御無視）
-            v.components.health:DoDelta(-dmg, nil, "ignite")
-            if v.HUD then v.HUD.bloodover:Flash() end
-        end)
+    -- 既存のイグナイトDOTがあればキャンセル
+    if v._igniteDotTask ~= nil then
+        v._igniteDotTask:Cancel()
+        v._igniteDotTask = nil
+    end
+    if v._igniteDotEndTask ~= nil then
+        v._igniteDotEndTask:Cancel()
+        v._igniteDotEndTask = nil
+    end
 
-        -- 5秒後にDOT停止
-        v._igniteDotEndTask = v:DoTaskInTime(5.0, function()
+    v._igniteDotTask = v:DoPeriodicTask(1.0, function()
+        if not v:IsValid() or v.components.health == nil or v.components.health.currenthealth <= 0 then
             if v._igniteDotTask ~= nil then
                 v._igniteDotTask:Cancel()
                 v._igniteDotTask = nil
             end
-            v._igniteDotEndTask = nil
-        end)
-    end
+            return
+        end
+        -- トゥルーダメージ（DoDelta で直接HP減算、防御無視）
+        v.components.health:DoDelta(-dmg, nil, "ignite")
+        if v.HUD then v.HUD.bloodover:Flash() end
+    end)
+
+    -- 5秒後にDOT停止
+    v._igniteDotEndTask = v:DoTaskInTime(5.0, function()
+        if v._igniteDotTask ~= nil then
+            v._igniteDotTask:Cancel()
+            v._igniteDotTask = nil
+        end
+        v._igniteDotEndTask = nil
+    end)
 
     -- 発動エフェクト（プレイヤー位置に炎リング + 発動音）
     local ringfx = GLOBAL.SpawnPrefab("firesplash_fx")
