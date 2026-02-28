@@ -316,7 +316,7 @@ configuration_options = {
             {description = "12", data = 12},
             {description = "15", data = 15},
         },
-        default = 8,
+        default = 4,
     },
     -- サモナースペル: イグナイト
     {

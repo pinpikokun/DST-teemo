@@ -367,10 +367,10 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
         _Rebuild(self, ...)
 
         local numSlots = #self.inv
-        if numSlots < TEEMO_RESERVED_SLOTS then return end
+        if numSlots < GLOBAL.TEEMO_RESERVED_SLOTS then return end
 
         -- 最後の3スロットを非表示＆操作無効にする
-        for i = numSlots - TEEMO_RESERVED_SLOTS + 1, numSlots do
+        for i = numSlots - GLOBAL.TEEMO_RESERVED_SLOTS + 1, numSlots do
             local slot = self.inv[i]
             if slot then
                 slot:Hide()
