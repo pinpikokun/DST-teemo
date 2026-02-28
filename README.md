@@ -1,6 +1,6 @@
 # Captain Teemo — Don't Starve Together
 
-> *"Size doesn't mean everything."*
+> *"Captain Teemo on duty."*
 
 **Captain Teemo** from League of Legends has arrived in Don't Starve Together!
 Go invisible, shoot poison darts, and turn the map into a minefield.
@@ -20,7 +20,7 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 **Mushroom Expert** — All mushroom penalties negated. Never worry about early-game food again.
 
 > [!TIP]
-> Stealth → Blind Dart opener → Attack during blind. That's the core gameplay loop.
+> Shroom. Poison. Dart. Danger? Freeze and disappear. Classic Teemo.
 
 > [!WARNING]
 > Your Blind Dart breaks when you get hit while holding it! Keep spare materials ready to craft a new one.
