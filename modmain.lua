@@ -11,6 +11,8 @@ GLOBAL.TEEMO_BLIND_DART_DAMAGE = GetModConfigData("blind_dart_damage") or 10
 GLOBAL.TEEMO_BLIND_DART_DOT = GetModConfigData("blind_dart_dot") or 5
 GLOBAL.TEEMO_NOXIOUS_TRAP_DAMAGE = GetModConfigData("noxious_trap_damage") or 20
 GLOBAL.TEEMO_NOXIOUS_TRAP_DOT = GetModConfigData("noxious_trap_dot") or 20
+GLOBAL.TEEMO_BLIND_DART_DURABILITY = GetModConfigData("blind_dart_durability")
+if GLOBAL.TEEMO_BLIND_DART_DURABILITY == nil then GLOBAL.TEEMO_BLIND_DART_DURABILITY = 3 end
 GLOBAL.TEEMO_POISON_SPOIL_PERCENT = GetModConfigData("poison_spoil_percent")
 if GLOBAL.TEEMO_POISON_SPOIL_PERCENT == nil then GLOBAL.TEEMO_POISON_SPOIL_PERCENT = 0.7 end
 GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
@@ -129,8 +131,32 @@ if GLOBAL.TEEMO_MUSHROOM_IMMUNITY then
     end)
 end
 
--- アイテムの名前 item name
+-- テーモ専用クラフトタブ
+local teemoTab = AddRecipeTab(
+    "Teemo Items"
+    ,998
+    ,GLOBAL.resolvefilepath("images/hud/teemotab.xml")
+    ,"teemotab.tex"
+    ,"teemo"
+)
+
+-- ブラインドダート クラフトレシピ（テーモ専用）
+AddRecipe2("blind_dart", {
+    GLOBAL.Ingredient("boards", 1),
+    GLOBAL.Ingredient("green_cap", 1),
+    GLOBAL.Ingredient("silk", 1),
+    GLOBAL.Ingredient("stinger", 1),
+    GLOBAL.Ingredient("rope", 1),
+}, GLOBAL.TECH.NONE, {
+    atlas = GLOBAL.resolvefilepath("images/inventoryimages/blind_dart.xml"),
+    image = "blind_dart.tex",
+    builder_tag = "teemo",
+    tab = teemoTab,
+}, {"CHARACTER"})
+
+-- アイテムの名前・レシピ説明
 STRINGS.NAMES.BLIND_DART = "Blind Dart"
+STRINGS.RECIPE_DESC.BLIND_DART = "A toxic blowdart that blinds enemies.\nLoses durability when hit while equipped."
 
 -- アイテムの名前 item name
 STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"

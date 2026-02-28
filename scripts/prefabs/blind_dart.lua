@@ -14,12 +14,34 @@ local function onequip(inst, owner)
     owner.AnimState:Show("ARM_carry")
     owner.AnimState:Hide("ARM_normal")
     owner:AddTag("blind_dart_equipped")
+
+    -- 敵の攻撃を受けたときに耐久力を減らす（耐久度が無効なら登録しない）
+    if inst.components.finiteuses then
+        inst._onowner_attacked = function(owner, data)
+            if not inst:IsValid() then return end
+            if data and data.attacker and data.attacker:IsValid()
+                and data.attacker.components.combat
+                and inst.components.finiteuses then
+                local cur = inst.components.finiteuses:GetUses()
+                if cur > 0 then
+                    inst.components.finiteuses:SetUses(cur - 1)
+                end
+            end
+        end
+        owner:ListenForEvent("attacked", inst._onowner_attacked)
+    end
 end
 
 local function onunequip(inst, owner)
     owner.AnimState:Hide("ARM_carry")
     owner.AnimState:Show("ARM_normal")
     owner:RemoveTag("blind_dart_equipped")
+
+    -- リスナー解除
+    if inst._onowner_attacked then
+        owner:RemoveEventCallback("attacked", inst._onowner_attacked)
+        inst._onowner_attacked = nil
+    end
 end
 
 local function doBlindEffect(target)
@@ -206,10 +228,22 @@ local function fn(Sim)
     inst:AddComponent("inventoryitem")
     -- インベントリの見た目
 	inst.components.inventoryitem.atlasname = "images/inventoryimages/blind_dart.xml"
-    inst.components.inventoryitem.keepondeath = true
+    -- inst.components.inventoryitem.keepondeath = false (default)
 
     -- 幽霊の攻撃（ハウント）時の処理？
     -- MakeHauntableLaunchAndPerish(inst)
+
+    -- 耐久力（敵に攻撃されると減る、設定値で破壊。0 = 壊れない）
+    if TEEMO_BLIND_DART_DURABILITY > 0 then
+        inst:AddComponent("finiteuses")
+        inst.components.finiteuses:SetMaxUses(TEEMO_BLIND_DART_DURABILITY)
+        inst.components.finiteuses:SetUses(TEEMO_BLIND_DART_DURABILITY)
+        inst.components.finiteuses:SetOnFinished(function(inst)
+            inst:DoTaskInTime(0, function() inst:Remove() end)
+        end)
+        -- 攻撃時の自動消費を無効化（被ダメージ時のみ手動で減少させる）
+        inst.components.finiteuses:SetIgnoreCombatDurabilityLoss(true)
+    end
 
     -- 装備
     inst:AddComponent("equippable")

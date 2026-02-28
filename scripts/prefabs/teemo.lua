@@ -242,8 +242,9 @@ local common_postinit = function(inst)
     end)
 
     -- 上向き攻撃時にblind_dartが体の下にはみ出る対策（クライアント側）
+    -- 3フレーム間隔（100ms）: 毎フレーム実行の負荷を軽減しつつ、視覚的な遅延は人間に知覚できないレベル
     inst._dartHiding = false
-    inst:DoPeriodicTask(0, function()
+    inst:DoPeriodicTask(3 * FRAMES, function()
         if inst:HasTag("blind_dart_equipped") then
             local isUp = inst.AnimState:GetCurrentFacing() == FACING_UP
             local isAttacking = inst.AnimState:IsCurrentAnimation("dart")

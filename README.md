@@ -22,11 +22,14 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 > [!TIP]
 > Stealth → Blind Dart opener → Attack during blind. That's the core gameplay loop.
 
+> [!WARNING]
+> Your Blind Dart breaks when you get hit while holding it! Keep spare materials ready to craft a new one.
+
 ---
 
 ## Configuration
 
-Customize **12 settings** from the server config — stats, damage, skill values, and more.
+Customize **13 settings** from the server config — stats, damage, skill values, and more.
 Make Teemo your own.
 
 > [!IMPORTANT]
