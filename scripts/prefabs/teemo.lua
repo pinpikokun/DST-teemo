@@ -234,12 +234,34 @@ local function startNoxiousTrapRecovery(inst)
     end)
 end
 
+local function stopSpellCooldownTask(inst)
+    if inst._spellCooldownTask ~= nil then
+        inst._spellCooldownTask:Cancel()
+        inst._spellCooldownTask = nil
+    end
+end
+
+local function startSpellCooldownTask(inst)
+    stopSpellCooldownTask(inst)
+    inst._spellCooldownTask = inst:DoPeriodicTask(1, function()
+        local fc = inst._flashCooldown:value()
+        if fc > 0 then
+            inst._flashCooldown:set(fc - 1)
+        end
+        local ic = inst._igniteCooldown:value()
+        if ic > 0 then
+            inst._igniteCooldown:set(ic - 1)
+        end
+    end)
+end
+
 local function onDeath(inst, data)
     inst.deathcause = data ~= nil and data.cause or "unknown"
     if inst.deathcause == "file_load" then return end
     disableCamouflage(inst)
     stopPassive(inst)
     stopNoxiousTrapRecovery(inst)
+    -- サモナースペルのクールダウンは死亡中も継続（LoL準拠）
 end
 
 local common_postinit = function(inst)
@@ -260,6 +282,10 @@ local common_postinit = function(inst)
 
     -- ノクサストラップ スタック数ネットワーク変数（クライアント同期用）
     inst._noxiousTrapStacks = net_byte(inst.GUID, "teemo._noxiousTrapStacks", "noxioustrapstacksdirty")
+
+    -- サモナースペル クールダウン ネットワーク変数（クライアント同期用）
+    inst._flashCooldown = net_ushortint(inst.GUID, "teemo._flashCooldown", "flashcooldowndirty")
+    inst._igniteCooldown = net_ushortint(inst.GUID, "teemo._igniteCooldown", "ignitecooldowndirty")
 
     -- サーバーからクライアントへのサウンド通知用 net_event
     inst._sound_spwn   = net_event(inst.GUID, "teemo._sound_spwn")
@@ -374,6 +400,7 @@ local master_postinit = function(inst)
     inst:ListenForEvent("ms_respawnedfromghost", function()
         startPassive(inst)
         startNoxiousTrapRecovery(inst)
+        startSpellCooldownTask(inst)
         -- リスポーン時にspwnボイスを再生
         inst:DoTaskInTime(0.5, function()
             if inst:IsValid() then
@@ -382,10 +409,10 @@ local master_postinit = function(inst)
         end)
     end)
 
-    -- 最終スロットをノクサストラップ専用にする（アイテム配置を禁止）
+    -- 最後の3スロットを専用スロットにする（ノクサストラップ + フラッシュ + イグナイト）
     local _CanTakeItemInSlot = inst.components.inventory.CanTakeItemInSlot
     rawset(inst.components.inventory, "CanTakeItemInSlot", function(self, item, slot)
-        if slot == self.maxslots then return false end
+        if slot > self.maxslots - TEEMO_RESERVED_SLOTS then return false end
         return _CanTakeItemInSlot(self, item, slot)
     end)
 
@@ -394,12 +421,19 @@ local master_postinit = function(inst)
     inst._noxiousTrapTimer = 0
     startNoxiousTrapRecovery(inst)
 
+    -- サモナースペル クールダウン管理
+    inst._flashCooldown:set(0)
+    inst._igniteCooldown:set(0)
+    startSpellCooldownTask(inst)
+
     -- セーブ/ロード
     local _OnSave = inst.OnSave
     inst.OnSave = function(inst, data)
         if _OnSave then _OnSave(inst, data) end
         data.noxious_trap_stacks = inst._noxiousTrapStacks:value()
         data.noxious_trap_timer = inst._noxiousTrapTimer
+        data.flash_cooldown = inst._flashCooldown:value()
+        data.ignite_cooldown = inst._igniteCooldown:value()
     end
 
     local _OnLoad = inst.OnLoad
@@ -411,6 +445,12 @@ local master_postinit = function(inst)
             end
             if data.noxious_trap_timer then
                 inst._noxiousTrapTimer = data.noxious_trap_timer
+            end
+            if data.flash_cooldown then
+                inst._flashCooldown:set(data.flash_cooldown)
+            end
+            if data.ignite_cooldown then
+                inst._igniteCooldown:set(data.ignite_cooldown)
             end
         end
     end

@@ -14,8 +14,8 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 
 ### エントリポイント
 
-- **modinfo.lua** — MODメタデータ（名前、バージョン、互換性フラグ）+ 13項目の設定オプション（体力/満腹/正気度、ダメージ倍率、防御、移動速度、Blind Dart初撃・DOT・耐久力、Noxious Trap初撃・DOT、毒腐敗率、キノコ無効）
-- **modmain.lua** — メインエントリポイント: 設定値をGLOBALに展開、アセット読み込み、レシピ定義、`AddModCharacter("teemo", "MALE")` でキャラクター登録、RPC定義（トラップ設置）、インベントリバーUI拡張（ノクサストラップ専用スロット）、月キノコ睡眠無効化
+- **modinfo.lua** — MODメタデータ（名前、バージョン、互換性フラグ）+ 14項目の設定オプション（体力/満腹/正気度、ダメージ倍率、防御、移動速度、Blind Dart初撃・DOT・耐久力、Noxious Trap初撃・DOT、Igniteダメージ、毒腐敗率、キノコ無効）
+- **modmain.lua** — メインエントリポイント: 設定値をGLOBALに展開、アセット読み込み、レシピ定義、`AddModCharacter("teemo", "MALE")` でキャラクター登録、RPC定義（トラップ設置・Flash・Ignite）、インベントリバーUI拡張（ノクサストラップ専用スロット + サモナースペルスロット）、月キノコ睡眠無効化
 
 ### スクリプト
 
@@ -23,6 +23,7 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
   - *Camouflage* — 1.5秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時に攻撃速度40%UP（5秒間）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
   - *Toxic Shot* — Blind Dart命中時の毒DOT（毎秒ダメージ × 4秒間、プレイヤーは30%軽減）
   - *Noxious Trap スタック管理* — 専用スロットからの罠設置（初期3個、30秒で1個回復、最大5）。スタック数・タイマーはセーブ/ロード対応
+  - *Summoner Spells* — Flash（ブリンク、壁抜け対応、CD300秒）とIgnite（単体トゥルーダメージDOT + 炎上パニック、CD180秒）。`net_ushortint`でクールダウン同期、騎乗中・ゴースト状態は発動不可
   - *Mushroom Expert* — キノコのマイナスステータス無効化（`custom_stats_mod_fn`）
   - *初期インベントリ*: blind_dart
   - *サウンド*: net_eventでサーバー→クライアント通知（spwn/attack/emote/move）、talk_LPは1回再生に制御
@@ -33,6 +34,7 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 - **scripts/components/explosive_noxious_trap.lua** — トラップ爆発処理: 範囲4のAoEエンティティ検索、初撃ダメージ（`GetAttacked`）、毒DOT（毎秒 × 4秒、プレイヤー30%軽減）、50%スローデバフ（4秒間）。設置者をダメージ帰属先に使用（nil時は近くのteemoプレイヤーをフォールバック検索）
 - **scripts/teemo_poison_util.lua** — 毒による食料腐敗ユーティリティ。`markTeemoPoisoned`/`unmarkTeemoPoisoned`で`loot_prefab_spawned`イベントリスナーを管理。毒DOT中に死んだ敵のドロップ食料の鮮度を設定値±15%ランダムで低下
 - **scripts/widgets/noxioustrap_slot.lua** — ノクサストラップ専用インベントリスロットUI。`noxioustrapstacksdirty`イベントで表示更新、クリックでRPC送信、スタック0でグレーアウト
+- **scripts/widgets/summoner_spell_slot.lua** — サモナースペル（Flash/Ignite）用UIスロット。クールダウン表示、ホバーアニメーション、Flashはクリック後にレティクル表示→左クリックで発動のターゲティングモード
 - **scripts/speech_teemo.lua** — キャラクターセリフ文字列（約46KB）
 
 ### アセット
@@ -64,6 +66,21 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 **セーブ/ロード:** `inst.OnSave` / `inst.OnLoad` をオーバーライドしてカスタムデータを永続化（既存の関数をチェインで保持）。
 
 **設定値管理:** `modinfo.lua` の `configuration_options` → `GetModConfigData()` → `GLOBAL.TEEMO_*` に展開。各スクリプトからグローバル変数として参照。
+
+## Git ブランチ命名規則
+
+- メインブランチ: `develop/claude`
+- 機能ブランチ: `develop/claude-<機能名>` （例: `develop/claude-summoner-spells`）
+
+## Git 操作ルール
+
+- **コミット・プッシュは必ずユーザーに確認してから行うこと**（自動モード・プランモード等のモードに関わらず、勝手に実行しない）
+
+## コア原則
+
+- **シンプルさの追求**: あらゆる変更を可能な限りシンプルに保つ。コードへの影響範囲を最小限に抑える。
+- **妥協の排除**: 根本原因を突き止める。一時しのぎの修正は行わない。
+- **影響の最小化**: 必要な箇所のみを変更する。不必要な変更によって新たなバグを作り込まない。
 
 ## 備考
 

@@ -25,6 +25,12 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 > [!WARNING]
 > Your Blind Dart breaks when you get hit while holding it! Keep spare materials ready to craft a new one.
 
+## Summoner Spells
+
+**Flash** — Blink through terrain and walls. Outplay everything.
+
+**Ignite** — Set an enemy on fire with true damage. Watch them burn and panic.
+
 ---
 
 ## Configuration

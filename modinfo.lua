@@ -248,7 +248,7 @@ configuration_options = {
             {description = "95",  data = 95},
             {description = "100", data = 100},
         },
-        default = 20,
+        default = 10,
     },
     {
         name = "poison_spoil_percent",
@@ -288,5 +288,20 @@ configuration_options = {
             {description = "Off", data = false},
         },
         default = true,
+    },
+    -- サモナースペル: イグナイト
+    {
+        name = "ignite_damage",
+        label = "Ignite Damage",
+        hover = "Ignite true damage per second (5s) / イグナイトの毎秒トゥルーダメージ（5秒間）",
+        options = {
+            {description = "5",   data = 5},
+            {description = "10",  data = 10},
+            {description = "15",  data = 15},
+            {description = "20",  data = 20},
+            {description = "25",  data = 25},
+            {description = "30",  data = 30},
+        },
+        default = 20,
     },
 }

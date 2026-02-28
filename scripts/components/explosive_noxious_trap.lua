@@ -98,7 +98,8 @@ function Explosive_Noxious_Trap:OnBurnt()
         -- アイテムは対象外
         local inpocket = v.components.inventoryitem and v.components.inventoryitem:IsHeld()
         if not inpocket then
-            if v.components.combat and v ~= self.inst then
+            -- 移動可能なクリーチャーのみ対象（壁・構造物には発動しない）
+            if v.components.combat and v.components.locomotor and v ~= self.inst then
 
                 if not v:HasTag(nonTarget) and not v:HasTag("companion") then
 
