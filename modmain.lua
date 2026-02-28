@@ -228,16 +228,27 @@ AddModRPCHandler("teemo", "use_flash", function(player, x, z)
         end
     end
 
+    -- クールダウン即時開始（連打防止）
+    player._flashCooldown:set(GLOBAL.TEEMO_FLASH_COOLDOWN)
+
+    -- 発動中は移動完全停止
+    player.components.locomotor:Stop()
+    player.components.locomotor:Clear()
+    player.Physics:Stop()
+    player:AddTag("busy")
+
+    -- 出発エフェクト
+    local puff = GLOBAL.SpawnPrefab("sand_puff")
+    if puff ~= nil then
+        puff.Transform:SetPosition(px, py, pz)
+    end
+
     -- テレポート実行
     if player.Physics ~= nil then
         player.Physics:Teleport(tx, 0, tz)
     end
 
-    -- フラッシュ音
-    player.SoundEmitter:PlaySound("dontstarve/common/staffteleport")
-
-    -- クールダウン開始
-    player._flashCooldown:set(GLOBAL.TEEMO_FLASH_COOLDOWN)
+    player:RemoveTag("busy")
 end)
 
 -- サモナースペル: イグナイト RPC（プレイヤー周囲の敵に炎上DOT）
