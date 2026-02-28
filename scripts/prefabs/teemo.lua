@@ -55,11 +55,11 @@ local function doCamouflage(inst)
 
     if not inst.isCamouflage then
         inst.isCamouflage = true
-        inst.AnimState:SetMultColour(.8,.8,.8,.8)
+        inst.AnimState:SetMultColour(.6,.6,.6,.8)
         inst.DynamicShadow:Enable(false)
 
         -- カモフラージュ発動エフェクト（砂煙）
-        local puff = SpawnPrefab("sand_puff")
+        local puff = SpawnPrefab("shadow_puff")
         if puff ~= nil then
             puff.Transform:SetPosition(inst.Transform:GetWorldPosition())
         end
@@ -164,7 +164,7 @@ local function checkCamouflage(inst)
     local x, _, z = inst.Transform:GetWorldPosition()
     local running = inst.components.locomotor:WantsToRun()
     if x == inst.camouflage_x and z == inst.camouflage_z and not running then
-        if GetTime() - inst.camouflage_t > 1.5 then doCamouflage(inst) end
+        if GetTime() - inst.camouflage_t > 3 then doCamouflage(inst) end
     else
         disableCamouflage(inst)
     end
