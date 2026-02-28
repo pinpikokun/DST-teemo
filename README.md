@@ -48,7 +48,3 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 
 Customize **13 settings** from the server config — stats, damage, skill values, and more.
 Make Teemo your own.
-
-> [!IMPORTANT]
-> All players must have this mod installed.
-
