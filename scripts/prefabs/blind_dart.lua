@@ -84,8 +84,8 @@ local function doBlindEffectEndTask(target)
 end
 
 local function doBlind(target)
-    if target.components.combat then
-        -- 2秒間攻撃できなくする
+    -- 移動可能なクリーチャーのみブラインド（壁等に適用するとBlankOutAttacksのコールバックでクラッシュ）
+    if target.components.combat and target.components.locomotor then
         target.components.combat:BlankOutAttacks(2.0)
     end
 end
@@ -120,7 +120,8 @@ local function doToxicShotEndTask(target)
 end
 
 local function doToxicShot(target)
-    if not target.components.health or target.components.health.currenthealth <= 0 then
+    -- 移動可能なクリーチャーのみ毒DOT（壁・構造物には初撃ダメージのみ）
+    if not target.components.health or target.components.health.currenthealth <= 0 or not target.components.locomotor then
         return
     end
 
