@@ -248,7 +248,7 @@ configuration_options = {
             {description = "95",  data = 95},
             {description = "100", data = 100},
         },
-        default = 20,
+        default = 10,
     },
     {
         name = "poison_spoil_percent",

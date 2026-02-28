@@ -10,7 +10,7 @@ GLOBAL.TEEMO_SPEED_MULT = GetModConfigData("speed_multiplier") or 1.25
 GLOBAL.TEEMO_BLIND_DART_DAMAGE = GetModConfigData("blind_dart_damage") or 10
 GLOBAL.TEEMO_BLIND_DART_DOT = GetModConfigData("blind_dart_dot") or 5
 GLOBAL.TEEMO_NOXIOUS_TRAP_DAMAGE = GetModConfigData("noxious_trap_damage") or 20
-GLOBAL.TEEMO_NOXIOUS_TRAP_DOT = GetModConfigData("noxious_trap_dot") or 20
+GLOBAL.TEEMO_NOXIOUS_TRAP_DOT = GetModConfigData("noxious_trap_dot") or 10
 GLOBAL.TEEMO_BLIND_DART_DURABILITY = GetModConfigData("blind_dart_durability")
 if GLOBAL.TEEMO_BLIND_DART_DURABILITY == nil then GLOBAL.TEEMO_BLIND_DART_DURABILITY = 3 end
 GLOBAL.TEEMO_POISON_SPOIL_PERCENT = GetModConfigData("poison_spoil_percent")
