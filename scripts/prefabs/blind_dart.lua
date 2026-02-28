@@ -9,14 +9,13 @@ local DART_QUOTES = {
 
 local assets = {
     Asset("ANIM", "anim/blind_dart.zip"),
-	Asset("ANIM", "anim/swap_blind_dart.zip"),
+    Asset("ANIM", "anim/swap_blind_dart.zip"),
 
-	Asset("IMAGE", "images/inventoryimages/blind_dart.tex"),
-	Asset("ATLAS", "images/inventoryimages/blind_dart.xml"),
+    Asset("IMAGE", "images/inventoryimages/blind_dart.tex"),
+    Asset("ATLAS", "images/inventoryimages/blind_dart.xml"),
 }
 
 local function onequip(inst, owner)
-    -- 手に持っている時の見た目？
     owner.AnimState:OverrideSymbol("swap_object", "swap_blind_dart", "swap_blind_dart")
     owner.AnimState:Show("ARM_carry")
     owner.AnimState:Hide("ARM_normal")
@@ -194,57 +193,39 @@ local function onattack(inst, atker, target, skipsanity)
 end
 
 local function fn(Sim)
-	local inst = CreateEntity()
-	
-	inst.entity:AddTransform()
-	inst.entity:AddAnimState()
+    local inst = CreateEntity()
+    
+    inst.entity:AddTransform()
+    inst.entity:AddAnimState()
     inst.entity:AddSoundEmitter()
     inst.entity:AddNetwork()
 
     MakeInventoryPhysics(inst)
-    -- RemovePhysicsColliders(inst)
 
-    -- 画像の構成
     inst.AnimState:SetBank("blind_dart")
-    -- 実際の画像
     inst.AnimState:SetBuild("blind_dart")
-    -- 画像構成の何番目の画像を表示するか
     inst.AnimState:PlayAnimation("idle")
 
-    -- 攻撃の見た目
     inst:AddTag("blowdart")
-    -- 攻撃の音に使われてる？
     inst:AddTag("sharp")
 
     inst.entity:SetPristine()
 
-    -- ホストではない場合はここまで？
     if not TheWorld.ismastersim then
         return inst
     end
-	
-    -- 武器
+    
     inst:AddComponent("weapon")
-    -- ダメージ
     inst.components.weapon:SetDamage(TEEMO_BLIND_DART_DAMAGE)
-    -- 範囲（攻撃射程、ヒット射程）
-    inst.components.weapon:SetRange(8, 10)
-    -- 攻撃効果
+    inst.components.weapon:SetRange(8, 10) -- (攻撃射程, ヒット判定射程)
     inst.components.weapon:SetOnAttack(onattack)
-    -- 吹き矢の矢を飛ばす見た目追加
-    inst.components.weapon:SetProjectile("blowdart_walrus")
+    inst.components.weapon:SetProjectile("blowdart_walrus") -- セイウチ吹き矢の飛翔体アニメーションを流用
 
 
-	inst:AddComponent("inspectable")
+    inst:AddComponent("inspectable")
 
-    -- インベントリ
     inst:AddComponent("inventoryitem")
-    -- インベントリの見た目
-	inst.components.inventoryitem.atlasname = "images/inventoryimages/blind_dart.xml"
-    -- inst.components.inventoryitem.keepondeath = false (default)
-
-    -- 幽霊の攻撃（ハウント）時の処理？
-    -- MakeHauntableLaunchAndPerish(inst)
+    inst.components.inventoryitem.atlasname = "images/inventoryimages/blind_dart.xml"
 
     -- 耐久力（敵に攻撃されると減る、設定値で破壊。0 = 壊れない）
     if TEEMO_BLIND_DART_DURABILITY > 0 then
@@ -258,7 +239,6 @@ local function fn(Sim)
         inst.components.finiteuses:SetIgnoreCombatDurabilityLoss(true)
     end
 
-    -- 装備
     inst:AddComponent("equippable")
     inst.components.equippable:SetOnEquip(onequip)
     inst.components.equippable:SetOnUnequip(onunequip)

@@ -49,13 +49,6 @@ end
 
 local start_inv = {
     "blind_dart",
-    -- "sewing_kit",
---    "chester_eyebone",
---    "goldenaxe",
---	  "ruinshat",
-	  -- "footballhat",
-	  -- "winterhat",
---	  "flowerhat",
 }
 
 local function doCamouflage(inst)
@@ -96,7 +89,7 @@ local function updCamouflagePrm(inst)
     inst.camouflage_x = x
     inst.camouflage_z = z
     inst.camouflage_t = GetTime()
-    inst.camouflage_h = inst.components.health ~= nil and inst.components.health.currenthealth or 0
+    inst.camouflage_h = inst.components.health ~= nil and inst.components.health.currenthealth or 0 -- 被ダメージ検知用
 end
 
 local function disableCamouflage(inst)
@@ -128,6 +121,7 @@ local function disableCamouflage(inst)
         inst._blankOutTask = nil
     end
 
+    -- ステルス解除ボーナス: 攻撃速度40%UP（5秒間）
     inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD - (TUNING.WILSON_ATTACK_PERIOD * 0.4)
     if inst.resetAttackSpeedTask ~= nil then
         inst.resetAttackSpeedTask:Cancel()
@@ -265,8 +259,8 @@ local function onDeath(inst, data)
 end
 
 local common_postinit = function(inst)
-	inst.soundsname = "teemo"
-	inst.MiniMapEntity:SetIcon( "teemo.tex" )
+    inst.soundsname = "teemo"
+    inst.MiniMapEntity:SetIcon( "teemo.tex" )
     inst:AddTag("teemo")
 
     -- talk_LPを1回再生に変更（ループ・途中停止を防止）
@@ -329,20 +323,13 @@ local common_postinit = function(inst)
 end
 
 
--- ACTIONS.GIVE.fn = function(act)
---     if act.target ~= nil and act.target.components.trader ~= nil then
---         act.target.components.trader:AcceptGift(act.doer, act.invobject)
---         return true
---     end
--- end
-
 local master_postinit = function(inst)
 
-	inst.components.health:SetMaxHealth(TEEMO_HEALTH)
-	inst.components.hunger:SetMax(TEEMO_HUNGER)
-	inst.components.sanity:SetMax(TEEMO_SANITY)
-	inst.components.combat.damagemultiplier = TEEMO_DAMAGE_MULT
-	inst.components.health:SetAbsorptionAmount(TEEMO_ABSORPTION)
+    inst.components.health:SetMaxHealth(TEEMO_HEALTH)
+    inst.components.hunger:SetMax(TEEMO_HUNGER)
+    inst.components.sanity:SetMax(TEEMO_SANITY)
+    inst.components.combat.damagemultiplier = TEEMO_DAMAGE_MULT
+    inst.components.health:SetAbsorptionAmount(TEEMO_ABSORPTION)
 
     -- パッシブ「キノコの達人」
     if TEEMO_MUSHROOM_IMMUNITY then
@@ -358,7 +345,6 @@ local master_postinit = function(inst)
         end
     end)
 
---    inst:ListenForEvent("performaction", function() disableCamouflage(inst) end)
     inst:ListenForEvent("buildsuccess", function() disableCamouflage(inst) end)
     inst:ListenForEvent("equipped", function() disableCamouflage(inst) end)
     inst:ListenForEvent("onpickup", function() disableCamouflage(inst) end)
