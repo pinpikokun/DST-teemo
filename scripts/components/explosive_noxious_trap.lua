@@ -67,12 +67,9 @@ function Explosive_Noxious_Trap:OnBurnt()
     local counterPlayer = self.deployer
     if counterPlayer == nil or not counterPlayer:IsValid() then
         counterPlayer = nil
-        local counterList = TheSim:FindEntities(x, y, z, self.explosiveRange * 5)
-        for k, v in pairs(counterList) do
-            if v:HasTag("teemo") then
-                counterPlayer = v
-                break
-            end
+        local counterList = TheSim:FindEntities(x, y, z, self.explosiveRange * 5, {"teemo"})
+        if #counterList > 0 then
+            counterPlayer = counterList[1]
         end
     end
 

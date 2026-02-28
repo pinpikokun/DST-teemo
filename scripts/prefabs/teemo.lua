@@ -56,7 +56,7 @@ local function doCamouflage(inst)
         -- ステルス中、敵の攻撃を継続的にブロック（ターゲットは維持）
         local function blankNearbyAttacks()
             local x,y,z = inst.Transform:GetWorldPosition()
-            local ents = TheSim:FindEntities(x, y, z, 20)
+            local ents = TheSim:FindEntities(x, y, z, 20, {"_combat"})
             for k,v in pairs(ents) do
                 if v.components.combat and v.components.combat.target == inst then
                     v.components.combat:BlankOutAttacks(1)
@@ -114,6 +114,17 @@ end
 local function checkCamouflage(inst)
 
     if inst.components.health == nil then
+        return
+    end
+
+    -- 死亡タイミングとタスク実行が競合した場合のクラッシュ防止
+    if inst.components.locomotor == nil then
+        return
+    end
+
+    -- 騎乗中はカモフラージュを無効化（ビーファロー、Woby、MOD追加マウント全対応）
+    if inst.components.rider ~= nil and inst.components.rider:IsRiding() then
+        disableCamouflage(inst)
         return
     end
 

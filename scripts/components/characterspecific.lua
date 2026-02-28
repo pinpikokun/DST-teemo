@@ -6,14 +6,6 @@ local CharacterSpecific = Class(function(self, inst)
     self.comment = "That does not belong to me."
 end)
 
-function CharacterSpecific:CanPickUp(doer)
-	if doer and doer.prefab ~= self.character then
-		return false
-	end
-
-	return true
-end
-
 function CharacterSpecific:SetOwner(name)
     self.character = name
 end
