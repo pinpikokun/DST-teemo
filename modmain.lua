@@ -19,9 +19,9 @@ GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
 if GLOBAL.TEEMO_MUSHROOM_IMMUNITY == nil then GLOBAL.TEEMO_MUSHROOM_IMMUNITY = true end
 
 -- サモナースペル設定値
-GLOBAL.TEEMO_FLASH_COOLDOWN = 3   -- TODO: テスト用、本番では300に戻す
+GLOBAL.TEEMO_FLASH_COOLDOWN = 300
 GLOBAL.TEEMO_FLASH_RANGE = 8
-GLOBAL.TEEMO_IGNITE_COOLDOWN = 3  -- TODO: テスト用、本番では180に戻す
+GLOBAL.TEEMO_IGNITE_COOLDOWN = 180
 GLOBAL.TEEMO_IGNITE_DAMAGE = GetModConfigData("ignite_damage") or 20
 GLOBAL.TEEMO_IGNITE_RANGE = 4
 
@@ -175,6 +175,7 @@ STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"
 AddModRPCHandler("teemo", "use_flash", function(player, x, z)
     if not player:HasTag("teemo") then return end
     if player:HasTag("playerghost") then return end
+    if player.components.rider ~= nil and player.components.rider:IsRiding() then return end
     if player._flashCooldown == nil or player._flashCooldown:value() > 0 then return end
 
     local px, py, pz = player.Transform:GetWorldPosition()
@@ -231,7 +232,8 @@ AddModRPCHandler("teemo", "use_flash", function(player, x, z)
     -- クールダウン即時開始（連打防止）
     player._flashCooldown:set(GLOBAL.TEEMO_FLASH_COOLDOWN)
 
-    -- 発動中は移動完全停止
+    -- 発動中は移動完全停止（死亡タイミング競合時のクラッシュ防止）
+    if player.components.locomotor == nil then return end
     player.components.locomotor:Stop()
     player.components.locomotor:Clear()
     player.Physics:Stop()
@@ -255,6 +257,7 @@ end)
 AddModRPCHandler("teemo", "use_ignite", function(player)
     if not player:HasTag("teemo") then return end
     if player:HasTag("playerghost") then return end
+    if player.components.rider ~= nil and player.components.rider:IsRiding() then return end
     if player._igniteCooldown == nil or player._igniteCooldown:value() > 0 then return end
 
     local x, y, z = player.Transform:GetWorldPosition()
@@ -288,11 +291,17 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
     -- 敵意のある対象がいなければ発動しない（CD・エフェクト・音なし）
     if target == nil then return end
 
+    -- クールダウン即時開始（連打防止）
+    player._igniteCooldown:set(GLOBAL.TEEMO_IGNITE_COOLDOWN)
+
     local v = target
 
-    -- 炎上エフェクト（burnable持ちなら着火、なければビジュアルのみ）
+    -- 炎上エフェクト（burnable持ちなら着火、延焼は防止）
     if v.components.burnable ~= nil and not v.components.burnable:IsBurning() and not v:HasTag("fireimmune") then
         v.components.burnable:Ignite(nil, player)
+        if v.components.propagator ~= nil then
+            v.components.propagator:StopSpreading()
+        end
     end
 
     -- 敵に炎の飛沫エフェクト
@@ -328,11 +337,10 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
         end
         -- トゥルーダメージ（DoDelta で直接HP減算、防御無視）
         v.components.health:DoDelta(-dmg, nil, "ignite")
-        if v.HUD then v.HUD.bloodover:Flash() end
     end)
 
-    -- 5秒後にDOT停止
-    v._igniteDotEndTask = v:DoTaskInTime(5.0, function()
+    -- 5秒後にDOT停止（5回目のティック確定後に停止するため+0.05）
+    v._igniteDotEndTask = v:DoTaskInTime(5.05, function()
         if v._igniteDotTask ~= nil then
             v._igniteDotTask:Cancel()
             v._igniteDotTask = nil
@@ -346,15 +354,13 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
         ringfx.Transform:SetPosition(x, y, z)
     end
     player.SoundEmitter:PlaySound("dontstarve/common/fireBurstLarge")
-
-    -- クールダウン開始
-    player._igniteCooldown:set(GLOBAL.TEEMO_IGNITE_COOLDOWN)
 end)
 
 -- ノクサストラップ スタック消費RPC
 AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
     if player:HasTag("teemo")
         and not player:HasTag("playerghost")
+        and not (player.components.rider ~= nil and player.components.rider:IsRiding())
         and player._noxiousTrapStacks
         and player._noxiousTrapStacks:value() > 0 then
         player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)

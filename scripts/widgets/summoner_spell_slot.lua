@@ -73,6 +73,7 @@ function SummonerSpellSlot:UpdateDisplay()
 end
 
 function SummonerSpellSlot:OnClick()
+    if self.owner:HasTag("playerghost") then return end
     local netvar = self:GetCooldownNetVar()
     local cd = netvar ~= nil and netvar:value() or 0
     if cd > 0 then return end
