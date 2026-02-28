@@ -17,11 +17,13 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 
 **Noxious Trap** — Deployable poison mushroom trap. AoE damage + slow. Place instantly from a dedicated inventory slot.
 
+**Mushroom Expert** — All mushroom penalties negated. Never worry about early-game food again.
+
+## Summoner Spells
+
 **Flash** — Blink through terrain and walls. Outplay everything.
 
 **Ignite** — Set an enemy on fire with true damage. Watch them burn and panic.
-
-**Mushroom Expert** — All mushroom penalties negated. Never worry about early-game food again.
 
 > [!TIP]
 > Shroom. Poison. Dart. Danger? Stop and vanish. Classic Teemo.
