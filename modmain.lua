@@ -164,6 +164,7 @@ STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"
 -- ノクサストラップ スタック消費RPC
 AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
     if player:HasTag("teemo")
+        and not player:HasTag("playerghost")
         and player._noxiousTrapStacks
         and player._noxiousTrapStacks:value() > 0 then
         player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
