@@ -65,6 +65,11 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 
 **設定値管理:** `modinfo.lua` の `configuration_options` → `GetModConfigData()` → `GLOBAL.TEEMO_*` に展開。各スクリプトからグローバル変数として参照。
 
+## Git ブランチ命名規則
+
+- メインブランチ: `develop/claude`
+- 機能ブランチ: `develop/claude-<機能名>` （例: `develop/claude-summoner-spells`）
+
 ## 備考
 
 - コメントは英語と日本語が混在

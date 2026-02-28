@@ -18,6 +18,16 @@ if GLOBAL.TEEMO_POISON_SPOIL_PERCENT == nil then GLOBAL.TEEMO_POISON_SPOIL_PERCE
 GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
 if GLOBAL.TEEMO_MUSHROOM_IMMUNITY == nil then GLOBAL.TEEMO_MUSHROOM_IMMUNITY = true end
 
+-- サモナースペル設定値
+GLOBAL.TEEMO_FLASH_COOLDOWN = GetModConfigData("flash_cooldown") or 300
+GLOBAL.TEEMO_FLASH_RANGE = GetModConfigData("flash_range") or 8
+GLOBAL.TEEMO_IGNITE_COOLDOWN = GetModConfigData("ignite_cooldown") or 180
+GLOBAL.TEEMO_IGNITE_DAMAGE = GetModConfigData("ignite_damage") or 20
+GLOBAL.TEEMO_IGNITE_RANGE = GetModConfigData("ignite_range") or 6
+
+-- 予約スロット数（ノクサストラップ + フラッシュ + イグナイト）
+GLOBAL.TEEMO_RESERVED_SLOTS = 3
+
 -- キャラクター選択画面のステータス表示用（TUNINGテーブルに登録）
 GLOBAL.TUNING.TEEMO_HEALTH = GLOBAL.TEEMO_HEALTH
 GLOBAL.TUNING.TEEMO_HUNGER = GLOBAL.TEEMO_HUNGER
@@ -161,6 +171,127 @@ STRINGS.RECIPE_DESC.BLIND_DART = "A toxic blowdart that blinds enemies.\nLoses d
 -- アイテムの名前 item name
 STRINGS.NAMES.NOXIOUS_TRAP = "Noxious Trap"
 
+-- サモナースペル: フラッシュ RPC（クライアントから座標を受け取りテレポート）
+AddModRPCHandler("teemo", "use_flash", function(player, x, z)
+    if not player:HasTag("teemo") then return end
+    if player:HasTag("playerghost") then return end
+    if player._flashCooldown == nil or player._flashCooldown:value() > 0 then return end
+
+    local px, py, pz = player.Transform:GetWorldPosition()
+    local tx, tz = x, z
+
+    -- 範囲チェック
+    local dx, dz = tx - px, tz - pz
+    local dist = math.sqrt(dx * dx + dz * dz)
+    local maxRange = GLOBAL.TEEMO_FLASH_RANGE
+    if dist > maxRange then
+        -- 最大距離にクランプ
+        local ratio = maxRange / dist
+        tx = px + dx * ratio
+        tz = pz + dz * ratio
+    end
+
+    -- 目的地が歩行可能か
+    if not GLOBAL.TheWorld.Map:IsPassableAtPoint(tx, 0, tz) then
+        -- 歩行可能なオフセットを探す
+        local offset = GLOBAL.FindWalkableOffset(GLOBAL.Vector3(tx, 0, tz), math.random() * GLOBAL.TWOPI, 1, 8, false, true)
+        if offset ~= nil then
+            tx = tx + offset.x
+            tz = tz + offset.z
+        else
+            return -- 有効な位置がない
+        end
+    end
+
+    -- テレポート実行
+    if player.Physics ~= nil then
+        player.Physics:Teleport(tx, 0, tz)
+    end
+
+    -- フラッシュ音
+    player.SoundEmitter:PlaySound("dontstarve/common/staffteleport")
+
+    -- クールダウン開始
+    player._flashCooldown:set(GLOBAL.TEEMO_FLASH_COOLDOWN)
+end)
+
+-- サモナースペル: イグナイト RPC（プレイヤー周囲の敵に炎上DOT）
+AddModRPCHandler("teemo", "use_ignite", function(player)
+    if not player:HasTag("teemo") then return end
+    if player:HasTag("playerghost") then return end
+    if player._igniteCooldown == nil or player._igniteCooldown:value() > 0 then return end
+
+    local x, y, z = player.Transform:GetWorldPosition()
+    local range = GLOBAL.TEEMO_IGNITE_RANGE
+
+    -- playerタグ除外（PvP時はteemoのみ除外）
+    local nonTarget = GLOBAL.TheNet:GetPVPEnabled() and "teemo" or "player"
+
+    local ents = GLOBAL.TheSim:FindEntities(x, y, z, range, {"_combat"})
+    for _, v in pairs(ents) do
+        if v ~= player
+            and v.components.combat
+            and not v:HasTag(nonTarget)
+            and not v:HasTag("companion")
+            and v.components.health
+            and v.components.health.currenthealth > 0 then
+
+            -- 炎上エフェクト（burnable持ちなら着火、なければビジュアルのみ）
+            if v.components.burnable ~= nil and not v.components.burnable:IsBurning() and not v:HasTag("fireimmune") then
+                v.components.burnable:Ignite(nil, player)
+            end
+
+            -- トゥルーダメージDOT（毎秒 × 5秒間、防御無視でヘルス直接減算）
+            local dmg = GLOBAL.TEEMO_IGNITE_DAMAGE
+            if v:HasTag("player") then
+                dmg = dmg * 0.3
+            end
+
+            -- 既存のイグナイトDOTがあればキャンセル
+            if v._igniteDotTask ~= nil then
+                v._igniteDotTask:Cancel()
+                v._igniteDotTask = nil
+            end
+            if v._igniteDotEndTask ~= nil then
+                v._igniteDotEndTask:Cancel()
+                v._igniteDotEndTask = nil
+            end
+
+            v._igniteDotTask = v:DoPeriodicTask(1.0, function()
+                if not v:IsValid() or v.components.health == nil or v.components.health.currenthealth <= 0 then
+                    if v._igniteDotTask ~= nil then
+                        v._igniteDotTask:Cancel()
+                        v._igniteDotTask = nil
+                    end
+                    return
+                end
+                -- トゥルーダメージ（DoDelta で直接HP減算、防御無視）
+                v.components.health:DoDelta(-dmg, nil, "ignite")
+                if v.HUD then v.HUD.bloodover:Flash() end
+            end)
+
+            -- 5秒後にDOT停止
+            v._igniteDotEndTask = v:DoTaskInTime(5.0, function()
+                if v._igniteDotTask ~= nil then
+                    v._igniteDotTask:Cancel()
+                    v._igniteDotTask = nil
+                end
+                v._igniteDotEndTask = nil
+            end)
+        end
+    end
+
+    -- 発動エフェクト（プレイヤー位置に炎エフェクト）
+    local fx = GLOBAL.SpawnPrefab("fire")
+    if fx ~= nil then
+        fx.Transform:SetPosition(x, y, z)
+        fx:DoTaskInTime(1.5, function() if fx:IsValid() then fx:Remove() end end)
+    end
+
+    -- クールダウン開始
+    player._igniteCooldown:set(GLOBAL.TEEMO_IGNITE_COOLDOWN)
+end)
+
 -- ノクサストラップ スタック消費RPC
 AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
     if player:HasTag("teemo")
@@ -210,31 +341,84 @@ AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
     end
 end)
 
--- テーモ用ノクサストラップ専用スロット（インベントリ一番右に固定）
+-- テーモ用専用スロット（インベントリ右端3枠: ノクサストラップ, フラッシュ, イグナイト）
 AddClassPostConstruct("widgets/inventorybar", function(self)
     if not self.owner:HasTag("teemo") then return end
 
     local NoxiousTrapSlot = require("widgets/noxioustrap_slot")
+    local SummonerSpellSlot = require("widgets/summoner_spell_slot")
 
     local _Rebuild = self.Rebuild
     self.Rebuild = function(self, ...)
+        -- 既存のカスタムスロットを破棄
         if self.noxioustrapslot ~= nil then
             self.noxioustrapslot:Kill()
             self.noxioustrapslot = nil
         end
+        if self.flashslot ~= nil then
+            self.flashslot:Kill()
+            self.flashslot = nil
+        end
+        if self.igniteslot ~= nil then
+            self.igniteslot:Kill()
+            self.igniteslot = nil
+        end
 
         _Rebuild(self, ...)
 
-        -- 最後のスロットを非表示＆操作無効にする
-        local last = self.inv[#self.inv]
-        if last then
-            last:Hide()
-            last.OnControl = function() return false end
+        local numSlots = #self.inv
+        if numSlots < TEEMO_RESERVED_SLOTS then return end
 
-            -- 最後のスロットと同じ位置に NoxiousTrapSlot を配置
-            local pos = last:GetPosition()
+        -- 最後の3スロットを非表示＆操作無効にする
+        for i = numSlots - TEEMO_RESERVED_SLOTS + 1, numSlots do
+            local slot = self.inv[i]
+            if slot then
+                slot:Hide()
+                slot.OnControl = function() return false end
+            end
+        end
+
+        -- スロット配置: [ノクサストラップ] [フラッシュ] [イグナイト]
+        -- 右から3番目 = ノクサストラップ
+        local trapSlot = self.inv[numSlots - 2]
+        if trapSlot then
+            local pos = trapSlot:GetPosition()
             self.noxioustrapslot = self.toprow:AddChild(NoxiousTrapSlot(self.owner))
             self.noxioustrapslot:SetPosition(pos.x, pos.y, pos.z)
+        end
+
+        -- 右から2番目 = フラッシュ
+        local flashInvSlot = self.inv[numSlots - 1]
+        if flashInvSlot then
+            local pos = flashInvSlot:GetPosition()
+            self.flashslot = self.toprow:AddChild(SummonerSpellSlot(self.owner, {
+                spell_name = "flash",
+                -- プレースホルダー画像（後で差し替え予定）
+                icon_atlas = "images/inventoryimages/blind_dart.xml",
+                icon_tex = "blind_dart.tex",
+                cooldown_event = "flashcooldowndirty",
+                on_activate = function(slot)
+                    slot:StartFlashTargeting()
+                end,
+            }))
+            self.flashslot:SetPosition(pos.x, pos.y, pos.z)
+        end
+
+        -- 右から1番目 = イグナイト
+        local igniteInvSlot = self.inv[numSlots]
+        if igniteInvSlot then
+            local pos = igniteInvSlot:GetPosition()
+            self.igniteslot = self.toprow:AddChild(SummonerSpellSlot(self.owner, {
+                spell_name = "ignite",
+                -- プレースホルダー画像（後で差し替え予定）
+                icon_atlas = "images/inventoryimages/noxious_trap.xml",
+                icon_tex = "noxious_trap.tex",
+                cooldown_event = "ignitecooldowndirty",
+                on_activate = function(slot)
+                    SendModRPCToServer(MOD_RPC["teemo"]["use_ignite"])
+                end,
+            }))
+            self.igniteslot:SetPosition(pos.x, pos.y, pos.z)
         end
     end
 
