@@ -58,6 +58,12 @@ local function doCamouflage(inst)
         inst.AnimState:SetMultColour(.8,.8,.8,.8)
         inst.DynamicShadow:Enable(false)
 
+        -- カモフラージュ発動エフェクト（砂煙）
+        local puff = SpawnPrefab("sand_puff")
+        if puff ~= nil then
+            puff.Transform:SetPosition(inst.Transform:GetWorldPosition())
+        end
+
         -- ステルス発動時セリフ（30%確率）
         if math.random() < 0.3 and inst.components.talker then
             inst.components.talker:Say(CAMOUFLAGE_QUOTES[math.random(#CAMOUFLAGE_QUOTES)])
