@@ -103,7 +103,12 @@ Assets = {
 
     Asset("SOUNDPACKAGE", "sound/DST-teemo.fev"),
     Asset("SOUND", "sound/DST-teemo_bank00.fsb"),
-    
+
+    Asset( "IMAGE", "images/inventoryimages/summoner_spell_flash.tex" ),
+    Asset( "ATLAS", "images/inventoryimages/summoner_spell_flash.xml" ),
+
+    Asset( "IMAGE", "images/inventoryimages/summoner_spell_ignite.tex" ),
+    Asset( "ATLAS", "images/inventoryimages/summoner_spell_ignite.xml" ),
 }
 
 RemapSoundEvent( "dontstarve/characters/teemo/death_voice", "DST-teemo/dontstarve/characters/DST-teemo/death_voice" )
@@ -458,9 +463,8 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
             local pos = flashInvSlot:GetPosition()
             self.flashslot = self.toprow:AddChild(SummonerSpellSlot(self.owner, {
                 spell_name = "flash",
-                -- プレースホルダー画像（後で差し替え予定）
-                icon_atlas = "images/inventoryimages/blind_dart.xml",
-                icon_tex = "blind_dart.tex",
+                icon_atlas = "images/inventoryimages/summoner_spell_flash.xml",
+                icon_tex = "summoner_spell_flash.tex",
                 cooldown_event = "flashcooldowndirty",
                 on_activate = function(slot)
                     slot:StartFlashTargeting()
@@ -475,9 +479,8 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
             local pos = igniteInvSlot:GetPosition()
             self.igniteslot = self.toprow:AddChild(SummonerSpellSlot(self.owner, {
                 spell_name = "ignite",
-                -- プレースホルダー画像（後で差し替え予定）
-                icon_atlas = "images/inventoryimages/noxious_trap.xml",
-                icon_tex = "noxious_trap.tex",
+                icon_atlas = "images/inventoryimages/summoner_spell_ignite.xml",
+                icon_tex = "summoner_spell_ignite.tex",
                 cooldown_event = "ignitecooldowndirty",
                 on_activate = function(slot)
                     SendModRPCToServer(MOD_RPC["teemo"]["use_ignite"])
