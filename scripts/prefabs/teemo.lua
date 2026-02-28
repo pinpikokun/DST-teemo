@@ -12,6 +12,24 @@ local NOXIOUS_TRAP_MAX_STACKS = NOXIOUS_TRAP_MAX_STACKS
 local NOXIOUS_TRAP_INITIAL_STACKS = 3
 local NOXIOUS_TRAP_RECOVERY_INTERVAL = 30
 
+-- LoL テーモ ステルス発動時セリフ
+local CAMOUFLAGE_QUOTES = {
+    "Become one with the jungle.",
+    "Now, we wait.",
+    "Patience now.",
+    "Nobody gets past Teemo.",
+}
+
+-- LoL テーモ ステルス解除時セリフ
+local AMBUSH_QUOTES = {
+    "You want Teemo? Come and get him!",
+    "I'm everywhere.",
+    "On my way.",
+    "I'll scout ahead!",
+    "Bug out!",
+    "Move!",
+}
+
 -- パッシブ「キノコの達人」: キノコのマイナスステータスを無効化
 local MUSHROOM_PREFABS = {
     red_cap = true, red_cap_cooked = true,
@@ -46,6 +64,11 @@ local function doCamouflage(inst)
         inst.isCamouflage = true
         inst.AnimState:SetMultColour(.8,.8,.8,.8)
         inst.DynamicShadow:Enable(false)
+
+        -- ステルス発動時セリフ（30%確率）
+        if math.random() < 0.3 and inst.components.talker then
+            inst.components.talker:Say(CAMOUFLAGE_QUOTES[math.random(#CAMOUFLAGE_QUOTES)])
+        end
 
         -- ステルス中は敵との当たり判定を無効化（すり抜ける）
         inst.Physics:ClearCollisionMask()
@@ -85,6 +108,11 @@ local function disableCamouflage(inst)
     inst.isCamouflage = false
     inst.AnimState:SetMultColour(1.0,1.0,1.0,1.0)
     inst.DynamicShadow:Enable(true)
+
+    -- ステルス解除時セリフ（30%確率）
+    if math.random() < 0.3 and inst.components.talker then
+        inst.components.talker:Say(AMBUSH_QUOTES[math.random(#AMBUSH_QUOTES)])
+    end
 
     -- 当たり判定を復元
     inst.Physics:ClearCollisionMask()

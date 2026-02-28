@@ -1,5 +1,14 @@
 local TeemoPoison = require("teemo_poison_util")
 
+-- LoL テーモ トラップ爆発時セリフ
+local TRAP_EXPLODE_QUOTES = {
+    "More where that came from.",
+    "Armed and ready.",
+    "Teemo'd.",
+    "I'm everywhere.",
+    "You're welcome.",
+}
+
 local Explosive_Noxious_Trap = Class(function(self,inst)
     self.inst = inst
     self.explosiveRange = 4
@@ -71,6 +80,11 @@ function Explosive_Noxious_Trap:OnBurnt()
         if #counterList > 0 then
             counterPlayer = counterList[1]
         end
+    end
+
+    -- トラップ爆発時セリフ（30%確率、deployer経由）
+    if counterPlayer and counterPlayer.components.talker and math.random() < 0.3 then
+        counterPlayer.components.talker:Say(TRAP_EXPLODE_QUOTES[math.random(#TRAP_EXPLODE_QUOTES)])
     end
 
     -- playerは爆発対象外

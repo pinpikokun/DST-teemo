@@ -1,6 +1,15 @@
 local MAX_TRAPS = 10
 local TRAP_LIFETIME = 300 -- 5分
 
+-- LoL テーモ トラップ設置時セリフ
+local TRAP_PLACE_QUOTES = {
+    "Face toward enemy.",
+    "Got a little surprise for 'em.",
+    "I own this land.",
+    "Another mushroom, another victim.",
+    "Watch your step.",
+}
+
 local assets=
 {
 	Asset("ANIM", "anim/noxious_trap.zip"),
@@ -76,6 +85,11 @@ end
 
 local function onDeploy(inst, pt, deployer)
 	if deployer ~= nil then
+		-- トラップ設置時セリフ（30%確率）
+		if deployer.components.talker and math.random() < 0.3 then
+			deployer.components.talker:Say(TRAP_PLACE_QUOTES[math.random(#TRAP_PLACE_QUOTES)])
+		end
+
 		if inst.components.explosive_noxious_trap ~= nil then
 			inst.components.explosive_noxious_trap:SetDeployer(deployer)
 		end
