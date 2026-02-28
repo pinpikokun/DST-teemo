@@ -14,32 +14,38 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 
 ### エントリポイント
 
-- **modinfo.lua** — MODメタデータ（名前、バージョン、互換性フラグ）
-- **modmain.lua** — メインエントリポイント: アセット読み込み、レシピ定義、`AddModCharacter("teemo", "MALE")` でキャラクター登録
+- **modinfo.lua** — MODメタデータ（名前、バージョン、互換性フラグ）+ 13項目の設定オプション（体力/満腹/正気度、ダメージ倍率、防御、移動速度、Blind Dart初撃・DOT・耐久力、Noxious Trap初撃・DOT、毒腐敗率、キノコ無効）
+- **modmain.lua** — メインエントリポイント: 設定値をGLOBALに展開、アセット読み込み、レシピ定義、`AddModCharacter("teemo", "MALE")` でキャラクター登録、RPC定義（トラップ設置）、インベントリバーUI拡張（ノクサストラップ専用スロット）、月キノコ睡眠無効化
 
 ### スクリプト
 
 - **scripts/prefabs/teemo.lua** — キャラクター定義。主要な能力:
-  - *Camouflage* — 1.5秒静止で透明化、敵の攻撃すり抜け、解除時に攻撃速度UP
-  - *Toxic Shot* — 攻撃時の毒DOT（初撃ダメージ + 毎秒DOT × 4秒間）
-  - *Noxious Trap スタック管理* — 専用スロットからの罠設置（初期3個、30秒で回復、最大5）
-  - *Mushroom Expert* — キノコのマイナスステータス無効化
-  - *初期インベントリ* セットアップ
-- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ）。ブラインド効果 + 毒DOT。テーモ専用。
-- **scripts/prefabs/noxious_trap.lua** — 設置型トラップ。5分の寿命、AoEダメージ + スローデバフ。PvP対応の起爆ロジック。最大10個設置。
-- **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — ターゲットエンティティに子としてアタッチするビジュアルエフェクト
-- **scripts/components/characterspecific.lua** — テーモ専用のアイテム装備制限
-- **scripts/components/explosive_noxious_trap.lua** — トラップ爆発処理: AoEエンティティ検索、クリーチャータグ別ダメージ計算、スローデバフ適用
-- **scripts/teemo_poison_util.lua** — 毒による食料腐敗ユーティリティ（毒状態で死んだ敵のドロップ食料の鮮度低下）
-- **scripts/widgets/noxioustrap_slot.lua** — ノクサストラップ専用インベントリスロットUI
-- **scripts/components/lootdropper.lua, perishable.lua** — DST標準コンポーネントの上書き
+  - *Camouflage* — 1.5秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時に攻撃速度40%UP（5秒間）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
+  - *Toxic Shot* — Blind Dart命中時の毒DOT（毎秒ダメージ × 4秒間、プレイヤーは30%軽減）
+  - *Noxious Trap スタック管理* — 専用スロットからの罠設置（初期3個、30秒で1個回復、最大5）。スタック数・タイマーはセーブ/ロード対応
+  - *Mushroom Expert* — キノコのマイナスステータス無効化（`custom_stats_mod_fn`）
+  - *初期インベントリ*: blind_dart
+  - *サウンド*: net_eventでサーバー→クライアント通知（spwn/attack/emote/move）、talk_LPは1回再生に制御
+- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程8-10）。命中時: 2秒ブラインド（`BlankOutAttacks`）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可
+- **scripts/prefabs/noxious_trap.lua** — 設置型トラップ。5分の寿命、0.3秒間隔でエンティティ検出、起爆でAoEダメージ + スローデバフ。PvP時はteemoタグ以外が対象、非PvP時はplayer以外が対象。最大10個設置（超過分は古い順に削除）。1秒後にステルス化
+- **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — ターゲットエンティティに子としてアタッチするビジュアルエフェクト（非永続、アニメーション後自動削除）
+- **scripts/components/characterspecific.lua** — テーモ専用のアイテム装備制限コンポーネント（`SetOwner`, `SetStorable`, `SetComment`）
+- **scripts/components/explosive_noxious_trap.lua** — トラップ爆発処理: 範囲4のAoEエンティティ検索、初撃ダメージ（`GetAttacked`）、毒DOT（毎秒 × 4秒、プレイヤー30%軽減）、50%スローデバフ（4秒間）。設置者をダメージ帰属先に使用（nil時は近くのteemoプレイヤーをフォールバック検索）
+- **scripts/teemo_poison_util.lua** — 毒による食料腐敗ユーティリティ。`markTeemoPoisoned`/`unmarkTeemoPoisoned`で`loot_prefab_spawned`イベントリスナーを管理。毒DOT中に死んだ敵のドロップ食料の鮮度を設定値±15%ランダムで低下
+- **scripts/widgets/noxioustrap_slot.lua** — ノクサストラップ専用インベントリスロットUI。`noxioustrapstacksdirty`イベントで表示更新、クリックでRPC送信、スタック0でグレーアウト
 - **scripts/speech_teemo.lua** — キャラクターセリフ文字列（約46KB）
 
 ### アセット
 
 - **anim/** — アニメーションZIPアーカイブ（キャラクター、アイテム、エフェクト）
 - **images/** — テクスチャ (.tex) とアトラス (.xml) のペア。UIコンテキスト別に整理（ポートレート、アバター、インベントリアイコン、HUD、マップアイコン）
+- **bigportraits/** — キャラクター選択画面の大型ポートレート
 - **sound/** — FMOD サウンドバンク (.fev + .fsb)
+- **lip/** — キャラクターアニメーションのソースファイル（エクスポート済み + 作業用）
+
+### 参考資料
+
+- **extracted_scripts/** — DST本体から抽出したスクリプト群（コンポーネント、prefab、UI等のリファレンス用）
 
 ## DST MOD開発パターン
 
@@ -47,12 +53,19 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 
 **Component パターン:** カスタムコンポーネントは `Class(function(self, inst) ... end)` を使用。メソッドは `ComponentName:Method()` で定義。
 
-**サーバー/クライアント分離:** `common_postinit` は全クライアントで実行（ビジュアル/UI）、`master_postinit` はサーバーのみ（ゲームロジック）。サーバー専用コードは `if not TheWorld.ismastersim then return inst end` でガード。
+**サーバー/クライアント分離:** `common_postinit` は全クライアントで実行（ビジュアル/UI/ネットワーク変数宣言）、`master_postinit` はサーバーのみ（ゲームロジック）。サーバー専用コードは `if not TheWorld.ismastersim then return inst end` でガード。
 
-**イベント駆動:** ゲームロジックはイベントに応答（`inst:ListenForEvent("eventname", callback)`）。主なイベント: `equipped`, `onattackother`, `attacked`, `death`。
+**ネットワーク同期:** `net_byte` で数値同期（トラップスタック数）、`net_event` でイベント通知（サウンド再生）。クライアント→サーバーは `SendModRPCToServer` / `AddModRPCHandler` で処理。
+
+**イベント駆動:** ゲームロジックはイベントに応答（`inst:ListenForEvent("eventname", callback)`）。主なイベント: `equipped`, `onattackother`, `attacked`, `death`, `ms_respawnedfromghost`, `working`, `picksomething`。
 
 **タスクシステム:** `inst:DoPeriodicTask(interval, fn)` で繰り返し処理、`inst:DoTaskInTime(delay, fn)` で遅延実行。`task:Cancel()` でキャンセル。
+
+**セーブ/ロード:** `inst.OnSave` / `inst.OnLoad` をオーバーライドしてカスタムデータを永続化（既存の関数をチェインで保持）。
+
+**設定値管理:** `modinfo.lua` の `configuration_options` → `GetModConfigData()` → `GLOBAL.TEEMO_*` に展開。各スクリプトからグローバル変数として参照。
 
 ## 備考
 
 - コメントは英語と日本語が混在
+- DST API上の制約: `FRAMES` はゲームの1フレーム時間（1/30秒）
