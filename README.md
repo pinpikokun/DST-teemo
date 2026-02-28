@@ -5,6 +5,7 @@
 **Captain Teemo** from League of Legends has arrived in Don't Starve Together!
 Go invisible, shoot poison darts, and turn the map into a minefield.
 
+[![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/pinpikokun/DST-teemo)
 [![Steam Workshop](https://img.shields.io/badge/Steam%20Workshop-Subscribe-blue?logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=390684095)
 
 > [!IMPORTANT]
