@@ -233,7 +233,7 @@ local function onDeath(inst, data)
     disableCamouflage(inst)
     stopPassive(inst)
     stopNoxiousTrapRecovery(inst)
-    stopSpellCooldownTask(inst)
+    -- サモナースペルのクールダウンは死亡中も継続（LoL準拠）
 end
 
 local common_postinit = function(inst)
