@@ -70,6 +70,10 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 - メインブランチ: `develop/claude`
 - 機能ブランチ: `develop/claude-<機能名>` （例: `develop/claude-summoner-spells`）
 
+## Git 操作ルール
+
+- **コミット・プッシュは必ずユーザーに確認してから行うこと**（自動モード・プランモード等のモードに関わらず、勝手に実行しない）
+
 ## 備考
 
 - コメントは英語と日本語が混在
