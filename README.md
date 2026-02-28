@@ -20,7 +20,7 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 **Mushroom Expert** — All mushroom penalties negated. Never worry about early-game food again.
 
 > [!TIP]
-> Shroom. Poison. Dart. Danger? Freeze and disappear. Classic Teemo.
+> Shroom. Poison. Dart. Danger? Stop and vanish. Classic Teemo.
 
 > [!WARNING]
 > Your Blind Dart breaks when you get hit while holding it! Keep spare materials ready to craft a new one.
