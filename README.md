@@ -35,8 +35,3 @@ Make Teemo your own.
 > [!IMPORTANT]
 > All players must have this mod installed.
 
----
-
-## Links
-
-- [Steam Workshop](https://steamcommunity.com/sharedfiles/filedetails/?id=390684095)
