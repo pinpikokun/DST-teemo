@@ -43,11 +43,6 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 - **images/** — テクスチャ (.tex) とアトラス (.xml) のペア。UIコンテキスト別に整理（ポートレート、アバター、インベントリアイコン、HUD、マップアイコン）
 - **bigportraits/** — キャラクター選択画面の大型ポートレート
 - **sound/** — FMOD サウンドバンク (.fev + .fsb)
-- **lip/** — キャラクターアニメーションのソースファイル（エクスポート済み + 作業用）
-
-### 参考資料
-
-- **extracted_scripts/** — DST本体から抽出したスクリプト群（コンポーネント、prefab、UI等のリファレンス用）
 
 ## DST MOD開発パターン
 

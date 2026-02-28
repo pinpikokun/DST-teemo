@@ -50,21 +50,21 @@ STRINGS.NAMES.TEEMO = "Teemo"
 STRINGS.SKIN_NAMES.teemo_none = "Teemo"
 STRINGS.CHARACTERS.GENERIC.DESCRIBE.TEEMO = 
 {
-	GENERIC = "It's Teemo!",
-	ATTACKER = "That Teemo looks shifty...",
-	MURDERER = "Murderer!",
-	REVIVER = "Teemo, friend of ghosts.",
-	GHOST = "Teemo could use a heart.",
+    GENERIC = "It's Teemo!",
+    ATTACKER = "That Teemo looks shifty...",
+    MURDERER = "Murderer!",
+    REVIVER = "Teemo, friend of ghosts.",
+    GHOST = "Teemo could use a heart.",
 }
 
 PrefabFiles = {
-	"teemo",
-	"teemo_none",
-	"noxious_trap",
-	"explode_noxious_trap",
-	"toxic_effect_by_teemo",
-	"blind_dart",
-	"blind_effect",
+    "teemo",
+    "teemo_none",
+    "noxious_trap",
+    "explode_noxious_trap",
+    "toxic_effect_by_teemo",
+    "blind_dart",
+    "blind_effect",
 }
 
 Assets = {
@@ -76,14 +76,14 @@ Assets = {
 
     Asset( "IMAGE", "bigportraits/teemo.tex" ),
     Asset( "ATLAS", "bigportraits/teemo.xml" ),
-	
-	Asset( "IMAGE", "images/map_icons/teemo.tex" ),
-	Asset( "ATLAS", "images/map_icons/teemo.xml" ),
-	
-	Asset( "IMAGE", "images/avatars/avatar_teemo.tex" ),
+    
+    Asset( "IMAGE", "images/map_icons/teemo.tex" ),
+    Asset( "ATLAS", "images/map_icons/teemo.xml" ),
+    
+    Asset( "IMAGE", "images/avatars/avatar_teemo.tex" ),
     Asset( "ATLAS", "images/avatars/avatar_teemo.xml" ),
-	
-	Asset( "IMAGE", "images/avatars/avatar_ghost_teemo.tex" ),
+    
+    Asset( "IMAGE", "images/avatars/avatar_ghost_teemo.tex" ),
     Asset( "ATLAS", "images/avatars/avatar_ghost_teemo.xml" ),
 
     Asset( "IMAGE", "images/avatars/self_inspect_teemo.tex" ),
@@ -92,14 +92,14 @@ Assets = {
     Asset( "IMAGE", "bigportraits/teemo_none.tex" ),
     Asset( "ATLAS", "bigportraits/teemo_none.xml" ),
     
-	Asset( "IMAGE", "images/inventoryimages/blind_dart.tex" ),
+    Asset( "IMAGE", "images/inventoryimages/blind_dart.tex" ),
     Asset( "ATLAS", "images/inventoryimages/blind_dart.xml" ),
     
-	Asset( "IMAGE", "images/inventoryimages/noxious_trap.tex" ),
+    Asset( "IMAGE", "images/inventoryimages/noxious_trap.tex" ),
     Asset( "ATLAS", "images/inventoryimages/noxious_trap.xml" ),
 
     Asset( "IMAGE", "images/hud/teemotab.tex" ),
-   	Asset( "ATLAS", "images/hud/teemotab.xml" ),
+    Asset( "ATLAS", "images/hud/teemotab.xml" ),
 
     Asset("SOUNDPACKAGE", "sound/DST-teemo.fev"),
     Asset("SOUND", "sound/DST-teemo_bank00.fsb"),
