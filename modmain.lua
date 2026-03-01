@@ -370,6 +370,11 @@ AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
         and player._noxiousTrapStacks:value() > 0 then
         player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
 
+        -- トラップ設置時はカモフラージュ解除
+        if player.disableCamouflage then
+            player.disableCamouflage()
+        end
+
         -- 建設アニメーション（build_pre → build_loop）
         player.sg:GoToState("dolongaction")
 

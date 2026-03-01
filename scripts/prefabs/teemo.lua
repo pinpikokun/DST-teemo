@@ -55,7 +55,7 @@ local function doCamouflage(inst)
 
     if not inst.isCamouflage then
         inst.isCamouflage = true
-        inst.AnimState:SetMultColour(.6,.6,.6,.8)
+        inst.AnimState:SetMultColour(.5,.5,.5,.8)
         inst.DynamicShadow:Enable(false)
 
         -- カモフラージュ発動エフェクト（砂煙）
@@ -343,6 +343,9 @@ local master_postinit = function(inst)
     end
 
     startPassive(inst)
+
+    -- modmain.lua等の外部スクリプトからカモフラージュ解除を呼べるよう公開
+    inst.disableCamouflage = function() disableCamouflage(inst) end
 
     -- スポーン時にspwnボイスを再生
     inst:DoTaskInTime(0.5, function()
