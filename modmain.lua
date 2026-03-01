@@ -186,7 +186,7 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
         -- 地面クリック: クリック地点近くの敵を検索
         if target_pos then
             local px, py, pz = target_pos:Get()
-            local ents = GLOBAL.TheSim:FindEntities(px, py, pz, 8, { "_combat" }, { "player", "INLIMBO" })
+            local ents = GLOBAL.TheSim:FindEntities(px, py, pz, 2, { "_combat" }, { "player", "INLIMBO" })
             local best_target = nil
             local best_dist = math.huge
             for _, ent in pairs(ents) do
@@ -232,7 +232,7 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
     return true
 end)
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.priority = -1
-GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 5
+GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 8
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.rmb = true
 
 -- ComponentAction: 地面右クリック
