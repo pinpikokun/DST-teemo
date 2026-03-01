@@ -55,8 +55,14 @@ local function doCamouflage(inst)
 
     if not inst.isCamouflage then
         inst.isCamouflage = true
-        inst.AnimState:SetMultColour(.8,.8,.8,.8)
+        inst.AnimState:SetMultColour(.5,.5,.5,.8)
         inst.DynamicShadow:Enable(false)
+
+        -- カモフラージュ発動エフェクト（砂煙）
+        local puff = SpawnPrefab("shadow_puff")
+        if puff ~= nil then
+            puff.Transform:SetPosition(inst.Transform:GetWorldPosition())
+        end
 
         -- ステルス発動時セリフ（30%確率）
         if math.random() < 0.3 and inst.components.talker then
@@ -158,7 +164,7 @@ local function checkCamouflage(inst)
     local x, _, z = inst.Transform:GetWorldPosition()
     local running = inst.components.locomotor:WantsToRun()
     if x == inst.camouflage_x and z == inst.camouflage_z and not running then
-        if GetTime() - inst.camouflage_t > 1.5 then doCamouflage(inst) end
+        if GetTime() - inst.camouflage_t > 3 then doCamouflage(inst) end
     else
         disableCamouflage(inst)
     end
@@ -337,6 +343,9 @@ local master_postinit = function(inst)
     end
 
     startPassive(inst)
+
+    -- modmain.lua等の外部スクリプトからカモフラージュ解除を呼べるよう公開
+    inst.disableCamouflage = function() disableCamouflage(inst) end
 
     -- スポーン時にspwnボイスを再生
     inst:DoTaskInTime(0.5, function()
