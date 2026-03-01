@@ -1,10 +1,6 @@
 # Captain Teemo — Don't Starve Together
 
 > *"Captain Teemo on duty."*
->
-> *Stealth, poison darts, mushroom traps, and Summoner Spells.*
->
-> *"Size doesn't mean everything."*
 
 **Captain Teemo** from League of Legends has arrived in Don't Starve Together!
 <br>Go invisible, shoot poison darts, and turn the map into a minefield.
