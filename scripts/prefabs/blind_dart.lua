@@ -79,7 +79,7 @@ local function doBlindEffectEndTask(target)
         target.blindEffectEndTask:Cancel()
     end
 
-    local time = 2.0
+    local time = 3.0
     if target.components.health then
         if target.components.health.currenthealth <= 0 then
             time = 0.5
@@ -110,8 +110,8 @@ local function doBlind(target)
             target._teemoBlindTask:Cancel()
         end
 
-        -- 2秒後に攻撃力を復元
-        target._teemoBlindTask = target:DoTaskInTime(2.0, function(target)
+        -- 3秒後に攻撃力を復元
+        target._teemoBlindTask = target:DoTaskInTime(3.0, function(target)
             if target:IsValid() and target.components.combat then
                 target.components.combat.externaldamagemultipliers:RemoveModifier(target, "teemo_blind")
             end

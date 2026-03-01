@@ -27,7 +27,7 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
   - *Mushroom Expert* — キノコのマイナスステータス無効化（`custom_stats_mod_fn`）
   - *初期インベントリ*: blind_dart
   - *サウンド*: net_eventでサーバー→クライアント通知（spwn/attack/emote/move）、talk_LPは1回再生に制御
-- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程5-50、攻撃間隔2.0秒）。命中時: 2秒ブラインド（`externaldamagemultipliers`でダメージ×0＝空振り、CD10秒）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可。専用飛翔体`blind_dart_projectile`（低速15・追尾必中）
+- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程5-50、攻撃間隔2.0秒）。命中時: 3秒ブラインド（`externaldamagemultipliers`でダメージ×0＝空振り、CD10秒）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可。専用飛翔体`blind_dart_projectile`（低速15・追尾必中）
 - **scripts/prefabs/noxious_trap.lua** — 設置型トラップ。5分の寿命、0.3秒間隔でエンティティ検出、起爆でAoEダメージ + スローデバフ。PvP時はteemoタグ以外が対象、非PvP時はplayer以外が対象。最大10個設置（超過分は古い順に削除）。1秒後にステルス化
 - **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — ターゲットエンティティに子としてアタッチするビジュアルエフェクト（非永続、アニメーション後自動削除）
 - **scripts/components/characterspecific.lua** — テーモ専用のアイテム装備制限コンポーネント（`SetOwner`, `SetStorable`, `SetComment`）
@@ -82,6 +82,31 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 - **複数エージェントで徹底検証すること**: コード変更のレビュー時は、複数の観点（ロジック安全性、レースコンディション、エッジケース等）を並行して検証する
 - **マルチプレイ挙動の考慮**: サーバー/クライアント間の同期、他プレイヤーへの影響、ホスト/ゲスト間の差異を必ず確認する
 - **DST環境固有のエッジケース**: 攻撃可能な壁、海上、ボート上、洞窟（地上↔洞窟の切り替え）での挙動を忘れずに検証する
+
+## バランス設計メモ
+
+### Blind Dart DPS（デフォルト設定）
+- 初撃10ダメージ + 毒DOT 5/秒×4秒 = 1発あたり30ダメージ
+- 通常時DPS: 初撃5/s + 毒5/s = **10/s**（攻撃間隔2.0秒、毒は延長で常時維持）
+- カモフラージュ解除後DPS: 初撃10/s + 毒5/s = **15/s**（攻撃間隔1.0秒、5秒間）
+- 毒DOTは重複せず効果延長のみ
+- 参考: 槍≒20/s、ダークソード≒40/s（近接・被弾リスクあり）
+
+### Noxious Trap（デフォルト設定）
+- 初撃20ダメージ（`GetAttacked`、防御で軽減される）+ 毒DOT 10/秒×4秒 = 1発あたり最大60ダメージ
+- AoE（範囲4）+ 50%スロー（4秒間）
+- 最大10個設置、5分で消滅、CD30秒で1スタック回復（最大5）
+- プレイヤーへの毒DOTは30%軽減（7/秒）
+
+### Ignite（デフォルト設定）
+- トゥルーダメージ（防御無視）20/秒×5秒 = 合計**100ダメージ**
+- 炎上パニック付き、CD180秒
+- 参考: 吹き矢1本（100ダメ）と同等だがCDが長い
+
+### 設計思想
+- 「ウザいけど一撃では倒せない、じわじわ削るキャラ」（LoLティーモ準拠）
+- 遠距離安全 + ブラインド + 毒で消耗戦に強い、近接DPSには勝てない
+- Noxious Trapはエリアコントロール用、Igniteは確殺・逃走阻止用
 
 ## 備考
 

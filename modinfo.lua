@@ -1,6 +1,6 @@
 -- This information tells other players more about the mod
 name = "Captain Teemo"
-description = "League of Legends."
+description = "\"Captain Teemo on duty.\"\n\nStealth, poison darts, mushroom traps, and Summoner Spells.\n\n\"Size doesn't mean everything.\""
 author = "pinpikokun"
 version = "0.2.2.3"
 
@@ -277,7 +277,7 @@ configuration_options = {
             {description = "7",    data = 7},
             {description = "10",   data = 10},
         },
-        default = 3,
+        default = 2,
     },
     {
         name = "mushroom_immunity",

@@ -1,9 +1,13 @@
 # Captain Teemo — Don't Starve Together
 
 > *"Captain Teemo on duty."*
+>
+> *Stealth, poison darts, mushroom traps, and Summoner Spells.*
+>
+> *"Size doesn't mean everything."*
 
 **Captain Teemo** from League of Legends has arrived in Don't Starve Together!
-Go invisible, shoot poison darts, and turn the map into a minefield.
+<br>Go invisible, shoot poison darts, and turn the map into a minefield.
 
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-black?logo=github)](https://github.com/pinpikokun/DST-teemo)
 [![Steam Workshop](https://img.shields.io/badge/Steam%20Workshop-Subscribe-blue?logo=steam)](https://steamcommunity.com/sharedfiles/filedetails/?id=390684095)
@@ -30,9 +34,6 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 **Noxious Trap** — Deployable poison mushroom trap. AoE damage + slow. Place instantly from a dedicated inventory slot.
 
 **Mushroom Expert** — All mushroom penalties negated. Never worry about early-game food again.
-
-> [!TIP]
-> Shroom. Poison. Dart. Danger? Stop and vanish. Classic Teemo.
 
 > [!WARNING]
 > Your Blind Dart breaks when you get hit while holding it! Keep spare materials ready to craft a new one.
