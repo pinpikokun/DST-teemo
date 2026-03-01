@@ -21,9 +21,9 @@ local function onequip(inst, owner)
     owner.AnimState:Hide("ARM_normal")
     owner:AddTag("blind_dart_equipped")
 
-    -- 攻撃間隔を1.5秒に設定（遠距離武器のため連射を制限）
+    -- 攻撃間隔を2.0秒に設定（遠距離武器のため連射を制限）
     if owner.components.combat then
-        owner.components.combat.min_attack_period = 1.5
+        owner.components.combat.min_attack_period = 2.0
     end
 
     -- 敵の攻撃を受けたときに耐久力を減らす（耐久度が無効なら登録しない）
@@ -100,9 +100,23 @@ local function doBlindEffectEndTask(target)
 end
 
 local function doBlind(target)
-    -- 移動可能なクリーチャーのみブラインド（壁等に適用するとBlankOutAttacksのコールバックでクラッシュ）
+    -- 移動可能なクリーチャーのみブラインド（壁・構造物は除外）
     if target.components.combat and target.components.locomotor then
-        target.components.combat:BlankOutAttacks(2.0)
+        -- 攻撃力を0にする（攻撃モーションは行うがダメージが通らない = 空振り）
+        target.components.combat.externaldamagemultipliers:SetModifier(target, 0, "teemo_blind")
+
+        -- 既存のブラインド解除タスクをキャンセル
+        if target._teemoBlindTask ~= nil then
+            target._teemoBlindTask:Cancel()
+        end
+
+        -- 2秒後に攻撃力を復元
+        target._teemoBlindTask = target:DoTaskInTime(2.0, function(target)
+            if target:IsValid() and target.components.combat then
+                target.components.combat.externaldamagemultipliers:RemoveModifier(target, "teemo_blind")
+            end
+            target._teemoBlindTask = nil
+        end)
     end
 end
 
@@ -187,16 +201,22 @@ local function onattack(inst, atker, target, skipsanity)
     -- ブラインド効果・毒DOTは吹き矢攻撃の場合のみ
     if inst:HasTag("blowdart") then
 
-        doBlind(target)
-        doToxicShot(target)
+        -- ブラインド効果（CD10秒）
+        local now = GetTime()
+        if inst._lastBlindTime == nil or now - inst._lastBlindTime >= 10 then
+            doBlind(target)
+            inst._lastBlindTime = now
 
-        if target.blindEffect ~= nil then
-            doBlindEffectEndTask(target)
-            return
+            -- ブラインドエフェクト（目玉）
+            if target.blindEffect ~= nil then
+                doBlindEffectEndTask(target)
+            else
+                doBlindEffect(target)
+                doBlindEffectEndTask(target)
+            end
         end
 
-        doBlindEffect(target)
-        doBlindEffectEndTask(target)
+        doToxicShot(target)
 
     end
 

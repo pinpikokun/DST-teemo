@@ -129,13 +129,13 @@ local function disableCamouflage(inst)
 
     -- ステルス解除ボーナス: Blind Dart装備時のみ攻撃速度UP（5秒間）
     if inst:HasTag("blind_dart_equipped") then
-        inst.components.combat.min_attack_period = 0.5
+        inst.components.combat.min_attack_period = 1.0
         if inst.resetAttackSpeedTask ~= nil then
             inst.resetAttackSpeedTask:Cancel()
         end
         inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
             if inst:HasTag("blind_dart_equipped") then
-                inst.components.combat.min_attack_period = 1.5
+                inst.components.combat.min_attack_period = 2.0
             end
             inst.resetAttackSpeedTask = nil
         end, inst)
