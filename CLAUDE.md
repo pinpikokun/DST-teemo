@@ -27,7 +27,7 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
   - *Mushroom Expert* — キノコのマイナスステータス無効化（`custom_stats_mod_fn`）
   - *初期インベントリ*: blind_dart
   - *サウンド*: net_eventでサーバー→クライアント通知（spwn/attack/emote/move）、talk_LPは1回再生に制御
-- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程5-50、攻撃間隔2.0秒）。命中時: 2秒ブラインド（`externaldamagemultipliers`でダメージ×0＝空振り、CD10秒）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可。専用飛翔体`blind_dart_projectile`（低速15・追尾必中）
+- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程5-50、攻撃間隔2.0秒）。命中時: 3秒ブラインド（`externaldamagemultipliers`でダメージ×0＝空振り、CD10秒）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可。専用飛翔体`blind_dart_projectile`（低速15・追尾必中）
 - **scripts/prefabs/noxious_trap.lua** — 設置型トラップ。5分の寿命、0.3秒間隔でエンティティ検出、起爆でAoEダメージ + スローデバフ。PvP時はteemoタグ以外が対象、非PvP時はplayer以外が対象。最大10個設置（超過分は古い順に削除）。1秒後にステルス化
 - **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — ターゲットエンティティに子としてアタッチするビジュアルエフェクト（非永続、アニメーション後自動削除）
 - **scripts/components/characterspecific.lua** — テーモ専用のアイテム装備制限コンポーネント（`SetOwner`, `SetStorable`, `SetComment`）
