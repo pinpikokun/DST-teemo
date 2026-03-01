@@ -151,7 +151,7 @@ configuration_options = {
             {description = "145", data = 145},
             {description = "150", data = 150},
         },
-        default = 10,
+        default = 5,
     },
     {
         name = "blind_dart_dot",
@@ -303,5 +303,15 @@ configuration_options = {
             {description = "30",  data = 30},
         },
         default = 20,
+    },
+    {
+        name = "show_damage_numbers",
+        label = "Damage Numbers",
+        hover = "Show floating damage numbers / ダメージ数値をポップアップ表示",
+        options = {
+            {description = "On",  data = true},
+            {description = "Off", data = false},
+        },
+        default = true,
     },
 }

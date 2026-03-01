@@ -129,13 +129,13 @@ local function disableCamouflage(inst)
 
     -- ステルス解除ボーナス: Blind Dart装備時のみ攻撃速度UP（5秒間）
     if inst:HasTag("blind_dart_equipped") then
-        inst.components.combat.min_attack_period = 1.0
+        inst.components.combat.min_attack_period = 0.5
         if inst.resetAttackSpeedTask ~= nil then
             inst.resetAttackSpeedTask:Cancel()
         end
         inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
             if inst:HasTag("blind_dart_equipped") then
-                inst.components.combat.min_attack_period = 2.0
+                inst.components.combat.min_attack_period = 1.0
             end
             inst.resetAttackSpeedTask = nil
         end, inst)
@@ -314,6 +314,7 @@ local common_postinit = function(inst)
     -- 3フレーム間隔（100ms）: 毎フレーム実行の負荷を軽減しつつ、視覚的な遅延は人間に知覚できないレベル
     inst._dartHiding = false
     inst:DoPeriodicTask(3 * FRAMES, function()
+        -- 上向き攻撃時にblind_dartが体の下にはみ出る対策
         if inst:HasTag("blind_dart_equipped") then
             local isUp = inst.AnimState:GetCurrentFacing() == FACING_UP
             local isAttacking = inst.AnimState:IsCurrentAnimation("dart")
