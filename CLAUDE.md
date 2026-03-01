@@ -20,7 +20,7 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 ### スクリプト
 
 - **scripts/prefabs/teemo.lua** — キャラクター定義。主要な能力:
-  - *Camouflage* — 1.5秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時に攻撃速度40%UP（5秒間）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
+  - *Camouflage* — 3秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時にBlind Dart装備中のみ攻撃速度UP（5秒間、1.5秒→0.5秒間隔）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
   - *Toxic Shot* — Blind Dart命中時の毒DOT（毎秒ダメージ × 4秒間、プレイヤーは30%軽減）
   - *Noxious Trap スタック管理* — 専用スロットからの罠設置（初期3個、30秒で1個回復、最大5）。スタック数・タイマーはセーブ/ロード対応
   - *Summoner Spells* — Flash（ブリンク、壁抜け対応、CD300秒）とIgnite（単体トゥルーダメージDOT + 炎上パニック、CD180秒）。`net_ushortint`でクールダウン同期、騎乗中・ゴースト状態は発動不可

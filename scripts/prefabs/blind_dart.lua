@@ -21,6 +21,11 @@ local function onequip(inst, owner)
     owner.AnimState:Hide("ARM_normal")
     owner:AddTag("blind_dart_equipped")
 
+    -- 攻撃間隔を1.5秒に設定（遠距離武器のため連射を制限）
+    if owner.components.combat then
+        owner.components.combat.min_attack_period = 1.5
+    end
+
     -- 敵の攻撃を受けたときに耐久力を減らす（耐久度が無効なら登録しない）
     if inst.components.finiteuses then
         inst._onowner_attacked = function(owner, data)
@@ -42,6 +47,11 @@ local function onunequip(inst, owner)
     owner.AnimState:Hide("ARM_carry")
     owner.AnimState:Show("ARM_normal")
     owner:RemoveTag("blind_dart_equipped")
+
+    -- 攻撃間隔を通常に戻す
+    if owner.components.combat then
+        owner.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD
+    end
 
     -- リスナー解除
     if inst._onowner_attacked then
@@ -217,9 +227,9 @@ local function fn(Sim)
     
     inst:AddComponent("weapon")
     inst.components.weapon:SetDamage(TEEMO_BLIND_DART_DAMAGE)
-    inst.components.weapon:SetRange(8, 10) -- (攻撃射程, ヒット判定射程)
+    inst.components.weapon:SetRange(5, 50) -- (攻撃射程, ヒット判定射程) 追尾弾のため必中
     inst.components.weapon:SetOnAttack(onattack)
-    inst.components.weapon:SetProjectile("blowdart_walrus") -- セイウチ吹き矢の飛翔体アニメーションを流用
+    inst.components.weapon:SetProjectile("blind_dart_projectile") -- テーモ専用飛翔体（低速・必中）
 
 
     inst:AddComponent("inspectable")

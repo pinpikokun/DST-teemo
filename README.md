@@ -23,7 +23,7 @@ Go invisible, shoot poison darts, and turn the map into a minefield.
 
 ## Abilities
 
-**Camouflage** — Stand still to go invisible. Phase through enemies and gain attack speed on breaking stealth.
+**Camouflage** — Stand still to go invisible. Phase through enemies and gain Blind Dart attack speed on breaking stealth.
 
 **Blind Dart** — Ranged blowdart that blinds and poisons on hit. Teemo-exclusive weapon.
 
