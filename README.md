@@ -46,7 +46,5 @@
 
 ---
 
-## Configuration
-
-Customize **13 settings** from the server config — stats, damage, skill values, and more.
-Make Teemo your own.
+> [!TIP]
+> Tweak stats, damage, skills, and more from the mod configuration screen. Make Teemo your own.
