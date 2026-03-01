@@ -5,6 +5,7 @@ local TeemoPoison = require("teemo_poison_util")
 local assets = {
     Asset( "ANIM", "anim/teemo.zip" ),
     Asset( "ANIM", "anim/ghost_teemo_build.zip" ),
+    Asset( "ANIM", "anim/blind-dart-target.zip" ),
 }
 local prefabs = {}
 
@@ -45,6 +46,31 @@ local function mushroomStatsMod(inst, health_delta, hunger_delta, sanity_delta, 
         if sanity_delta < 0 then sanity_delta = 0 end
     end
     return health_delta, hunger_delta, sanity_delta
+end
+
+-- Blind Dart射程円インジケーター（クライアント専用、ローカルプレイヤーのみ）
+local function createRangeIndicator(inst)
+    local fx = CreateEntity()
+    fx.entity:AddTransform()
+    fx.entity:AddAnimState()
+    fx:AddTag("CLASSIFIED")
+    fx:AddTag("NOCLICK")
+    fx.persists = false
+
+    fx.AnimState:SetBank("blind-dart-target")
+    fx.AnimState:SetBuild("blind-dart-target")
+    fx.AnimState:SetOrientation(ANIM_ORIENTATION.OnGround)
+    fx.AnimState:SetLayer(LAYER_BACKGROUND)
+    fx.AnimState:SetSortOrder(3)
+    fx.AnimState:SetFinalOffset(-1)
+    fx.AnimState:PlayAnimation("target-ring", true)
+    fx.AnimState:SetMultColour(0.5, 0.8, 1.0, 0.5)
+
+    fx.entity:SetParent(inst.entity)
+    fx.Transform:SetPosition(0, 0, 0)
+    fx:Hide()
+
+    return fx
 end
 
 local start_inv = {
@@ -330,7 +356,24 @@ local common_postinit = function(inst)
                 inst._dartHiding = false
             end
         end
+
+        -- 射程円インジケーターの表示/非表示
+        if inst._rangeIndicator then
+            if inst:HasTag("blind_dart_equipped") and not inst:HasTag("playerghost") then
+                inst._rangeIndicator:Show()
+            else
+                inst._rangeIndicator:Hide()
+            end
+        end
     end)
+
+    -- 射程円インジケーター生成（ローカルプレイヤーのみ）
+    if not TheNet:IsDedicated() then
+        inst:DoTaskInTime(0, function()
+            if inst ~= ThePlayer then return end
+            inst._rangeIndicator = createRangeIndicator(inst)
+        end)
+    end
 end
 
 
