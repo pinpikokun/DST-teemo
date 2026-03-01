@@ -64,6 +64,7 @@ PrefabFiles = {
     "explode_noxious_trap",
     "toxic_effect_by_teemo",
     "blind_dart",
+    "blind_dart_projectile",
     "blind_effect",
 }
 

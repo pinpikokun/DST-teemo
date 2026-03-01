@@ -127,15 +127,19 @@ local function disableCamouflage(inst)
         inst._blankOutTask = nil
     end
 
-    -- ステルス解除ボーナス: 攻撃速度40%UP（5秒間）
-    inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD - (TUNING.WILSON_ATTACK_PERIOD * 0.4)
-    if inst.resetAttackSpeedTask ~= nil then
-        inst.resetAttackSpeedTask:Cancel()
+    -- ステルス解除ボーナス: Blind Dart装備時のみ攻撃速度UP（5秒間）
+    if inst:HasTag("blind_dart_equipped") then
+        inst.components.combat.min_attack_period = 1.0
+        if inst.resetAttackSpeedTask ~= nil then
+            inst.resetAttackSpeedTask:Cancel()
+        end
+        inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
+            if inst:HasTag("blind_dart_equipped") then
+                inst.components.combat.min_attack_period = 2.0
+            end
+            inst.resetAttackSpeedTask = nil
+        end, inst)
     end
-    inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
-        inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD
-        inst.resetAttackSpeedTask = nil
-    end, inst)
 
 end
 
