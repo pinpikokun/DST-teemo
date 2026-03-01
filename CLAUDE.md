@@ -20,14 +20,14 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 ### スクリプト
 
 - **scripts/prefabs/teemo.lua** — キャラクター定義。主要な能力:
-  - *Camouflage* — 3秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時にBlind Dart装備中のみ攻撃速度UP（5秒間、1.5秒→0.5秒間隔）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
+  - *Camouflage* — 3秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時にBlind Dart装備中のみ攻撃速度UP（5秒間、2.0秒→1.0秒間隔）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
   - *Toxic Shot* — Blind Dart命中時の毒DOT（毎秒ダメージ × 4秒間、プレイヤーは30%軽減）
   - *Noxious Trap スタック管理* — 専用スロットからの罠設置（初期3個、30秒で1個回復、最大5）。スタック数・タイマーはセーブ/ロード対応
   - *Summoner Spells* — Flash（ブリンク、壁抜け対応、CD300秒）とIgnite（単体トゥルーダメージDOT + 炎上パニック、CD180秒）。`net_ushortint`でクールダウン同期、騎乗中・ゴースト状態は発動不可
   - *Mushroom Expert* — キノコのマイナスステータス無効化（`custom_stats_mod_fn`）
   - *初期インベントリ*: blind_dart
   - *サウンド*: net_eventでサーバー→クライアント通知（spwn/attack/emote/move）、talk_LPは1回再生に制御
-- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程8-10）。命中時: 2秒ブラインド（`BlankOutAttacks`）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可
+- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程5-50、攻撃間隔2.0秒）。命中時: 2秒ブラインド（`externaldamagemultipliers`でダメージ×0＝空振り、CD10秒）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可。専用飛翔体`blind_dart_projectile`（低速15・追尾必中）
 - **scripts/prefabs/noxious_trap.lua** — 設置型トラップ。5分の寿命、0.3秒間隔でエンティティ検出、起爆でAoEダメージ + スローデバフ。PvP時はteemoタグ以外が対象、非PvP時はplayer以外が対象。最大10個設置（超過分は古い順に削除）。1秒後にステルス化
 - **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — ターゲットエンティティに子としてアタッチするビジュアルエフェクト（非永続、アニメーション後自動削除）
 - **scripts/components/characterspecific.lua** — テーモ専用のアイテム装備制限コンポーネント（`SetOwner`, `SetStorable`, `SetComment`）
