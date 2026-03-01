@@ -181,7 +181,8 @@ local function onhit(inst, owner, target)
         -- 初撃のみ怯み、2撃目以降は怯みなし（LoL準拠: AAにスタンなし）
         if not target._teemo_dart_flinched then
             target._teemo_dart_flinched = true
-            target.components.combat:GetAttacked(attacker, damage, weapon)
+            local valid_attacker = attacker ~= nil and attacker:IsValid() and attacker or nil
+            target.components.combat:GetAttacked(valid_attacker, damage, weapon)
         else
             if target.components.health then
                 target.components.health:DoDelta(-damage, nil, "blind_dart")

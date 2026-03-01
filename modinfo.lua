@@ -305,6 +305,16 @@ configuration_options = {
         default = 20,
     },
     {
+        name = "show_range_indicator",
+        label = "Range Indicator",
+        hover = "Show Blind Dart range circle on the ground / ブラインドダート装備時に射程円を表示",
+        options = {
+            {description = "On",  data = true},
+            {description = "Off", data = false},
+        },
+        default = true,
+    },
+    {
         name = "show_damage_numbers",
         label = "Damage Numbers",
         hover = "Show floating damage numbers / ダメージ数値をポップアップ表示",

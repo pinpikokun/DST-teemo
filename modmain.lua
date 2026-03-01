@@ -17,6 +17,8 @@ GLOBAL.TEEMO_POISON_SPOIL_PERCENT = GetModConfigData("poison_spoil_percent")
 if GLOBAL.TEEMO_POISON_SPOIL_PERCENT == nil then GLOBAL.TEEMO_POISON_SPOIL_PERCENT = 0.7 end
 GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
 if GLOBAL.TEEMO_MUSHROOM_IMMUNITY == nil then GLOBAL.TEEMO_MUSHROOM_IMMUNITY = true end
+GLOBAL.TEEMO_SHOW_RANGE_INDICATOR = GetModConfigData("show_range_indicator")
+if GLOBAL.TEEMO_SHOW_RANGE_INDICATOR == nil then GLOBAL.TEEMO_SHOW_RANGE_INDICATOR = true end
 GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS = GetModConfigData("show_damage_numbers")
 if GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS == nil then GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS = true end
 
@@ -186,7 +188,10 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
         -- 地面クリック: クリック地点近くの敵を検索
         if target_pos then
             local px, py, pz = target_pos:Get()
-            local ents = GLOBAL.TheSim:FindEntities(px, py, pz, 2, { "_combat" }, { "player", "INLIMBO" })
+            local dx, dz = px - x, pz - z
+            local dist_sq = dx * dx + dz * dz
+            local search_radius = dist_sq <= 25 and 4 or dist_sq <= 49 and 2 or 1
+            local ents = GLOBAL.TheSim:FindEntities(px, py, pz, search_radius, { "_combat" }, { "player", "INLIMBO" })
             local best_target = nil
             local best_dist = math.huge
             for _, ent in pairs(ents) do
@@ -232,7 +237,7 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
     return true
 end)
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.priority = -1
-GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 8
+GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 7
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.rmb = true
 
 -- ComponentAction: 地面右クリック

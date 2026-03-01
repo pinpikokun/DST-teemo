@@ -14,20 +14,22 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 
 ### エントリポイント
 
-- **modinfo.lua** — MODメタデータ（名前、バージョン、互換性フラグ）+ 14項目の設定オプション（体力/満腹/正気度、ダメージ倍率、防御、移動速度、Blind Dart初撃・DOT・耐久力、Noxious Trap初撃・DOT、Igniteダメージ、毒腐敗率、キノコ無効）
-- **modmain.lua** — メインエントリポイント: 設定値をGLOBALに展開、アセット読み込み、レシピ定義、`AddModCharacter("teemo", "MALE")` でキャラクター登録、RPC定義（トラップ設置・Flash・Ignite）、インベントリバーUI拡張（ノクサストラップ専用スロット + サモナースペルスロット）、月キノコ睡眠無効化
+- **modinfo.lua** — MODメタデータ（名前、バージョン、互換性フラグ）+ 16項目の設定オプション（体力/満腹/正気度、ダメージ倍率、防御、移動速度、Blind Dart初撃・DOT・耐久力、Noxious Trap初撃・DOT、Igniteダメージ、毒腐敗率、キノコ無効、射程円表示、ダメージ数字表示）
+- **modmain.lua** — メインエントリポイント: 設定値をGLOBALに展開、アセット読み込み、レシピ定義、`AddModCharacter("teemo", "MALE")` でキャラクター登録、RPC定義（トラップ設置・Flash・Ignite・ダメージ数字表示）、インベントリバーUI拡張（ノクサストラップ専用スロット + サモナースペルスロット）、ダメージ数字ポップアップ表示、射程円インジケーター表示、月キノコ睡眠無効化
 
 ### スクリプト
 
 - **scripts/prefabs/teemo.lua** — キャラクター定義。主要な能力:
-  - *Camouflage* — 3秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時にBlind Dart装備中のみ攻撃速度UP（5秒間、2.0秒→1.0秒間隔）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
+  - *Camouflage* — 3秒静止で透明化、衝突判定無効化で敵の攻撃すり抜け、`BlankOutAttacks`で敵の攻撃を0.5秒毎にブロック。解除時にBlind Dart装備中のみ攻撃速度UP（5秒間、1.0秒→0.5秒間隔）。被弾時は移動速度が通常に戻る（5秒間）。騎乗中は無効
   - *Toxic Shot* — Blind Dart命中時の毒DOT（毎秒ダメージ × 4秒間、プレイヤーは30%軽減）
   - *Noxious Trap スタック管理* — 専用スロットからの罠設置（初期3個、30秒で1個回復、最大5）。スタック数・タイマーはセーブ/ロード対応
   - *Summoner Spells* — Flash（ブリンク、壁抜け対応、CD300秒）とIgnite（単体トゥルーダメージDOT + 炎上パニック、CD180秒）。`net_ushortint`でクールダウン同期、騎乗中・ゴースト状態は発動不可
   - *Mushroom Expert* — キノコのマイナスステータス無効化（`custom_stats_mod_fn`）
+  - *Range Indicator* — Blind Dart装備時にローカルプレイヤーの足元に射程円を表示（`blind-dart-target`アニメーション、設定でOn/Off可）
   - *初期インベントリ*: blind_dart
   - *サウンド*: net_eventでサーバー→クライアント通知（spwn/attack/emote/move）、talk_LPは1回再生に制御
-- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程5-50、攻撃間隔2.0秒）。命中時: 3秒ブラインド（`externaldamagemultipliers`でダメージ×0＝空振り、CD10秒）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可。専用飛翔体`blind_dart_projectile`（低速15・追尾必中）
+- **scripts/prefabs/blind_dart.lua** — 遠距離武器（吹き矢タイプ、射程7、攻撃間隔1.0秒）。命中時: 3秒ブラインド（`externaldamagemultipliers`でダメージ×0＝空振り、CD10秒）+ 毒DOT。テーモ専用（`characterspecific`コンポーネント）。耐久力は被弾で減少（`finiteuses` + `SetIgnoreCombatDurabilityLoss`で攻撃時消費を無効化）、設定で無限も可
+- **scripts/prefabs/blind_dart_projectile.lua** — Blind Dart専用飛翔体。低速（速度15）・追尾必中。命中時にブラインド付与・毒DOT適用・ダメージ数字表示RPCを送信。地面クリック時は着弾点付近の敵を索敵してリターゲット（索敵半径: 距離≤5→4、距離6-7→2、距離≥8→1）
 - **scripts/prefabs/noxious_trap.lua** — 設置型トラップ。5分の寿命、0.3秒間隔でエンティティ検出、起爆でAoEダメージ + スローデバフ。PvP時はteemoタグ以外が対象、非PvP時はplayer以外が対象。最大10個設置（超過分は古い順に削除）。1秒後にステルス化
 - **scripts/prefabs/blind_effect.lua, explode_noxious_trap.lua, toxic_effect_by_teemo.lua** — ターゲットエンティティに子としてアタッチするビジュアルエフェクト（非永続、アニメーション後自動削除）
 - **scripts/components/characterspecific.lua** — テーモ専用のアイテム装備制限コンポーネント（`SetOwner`, `SetStorable`, `SetComment`）
@@ -35,6 +37,7 @@ Don't Starve Together (DST) のキャラクターMOD「Captain Teemo」（League
 - **scripts/teemo_poison_util.lua** — 毒による食料腐敗ユーティリティ。`markTeemoPoisoned`/`unmarkTeemoPoisoned`で`loot_prefab_spawned`イベントリスナーを管理。毒DOT中に死んだ敵のドロップ食料の鮮度を設定値±15%ランダムで低下
 - **scripts/widgets/noxioustrap_slot.lua** — ノクサストラップ専用インベントリスロットUI。`noxioustrapstacksdirty`イベントで表示更新、クリックでRPC送信、スタック0でグレーアウト
 - **scripts/widgets/summoner_spell_slot.lua** — サモナースペル（Flash/Ignite）用UIスロット。クールダウン表示、ホバーアニメーション、Flashはクリック後にレティクル表示→左クリックで発動のターゲティングモード
+- **scripts/widgets/teemo_popupnumber.lua** — ダメージ数字ポップアップウィジェット。Physical（橙）/Magic（水色）/True（白）の色分け、上昇+フェードイン→下降+フェードアウトの2段階アニメーション
 - **scripts/speech_teemo.lua** — キャラクターセリフ文字列（約46KB）
 
 ### アセット
