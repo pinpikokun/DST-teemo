@@ -367,8 +367,8 @@ local common_postinit = function(inst)
         end
     end)
 
-    -- 射程円インジケーター生成（ローカルプレイヤーのみ）
-    if not TheNet:IsDedicated() then
+    -- 射程円インジケーター生成（ローカルプレイヤーのみ、設定でON時）
+    if not TheNet:IsDedicated() and TEEMO_SHOW_RANGE_INDICATOR then
         inst:DoTaskInTime(0, function()
             if inst ~= ThePlayer then return end
             inst._rangeIndicator = createRangeIndicator(inst)

@@ -17,6 +17,8 @@ GLOBAL.TEEMO_POISON_SPOIL_PERCENT = GetModConfigData("poison_spoil_percent")
 if GLOBAL.TEEMO_POISON_SPOIL_PERCENT == nil then GLOBAL.TEEMO_POISON_SPOIL_PERCENT = 0.7 end
 GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
 if GLOBAL.TEEMO_MUSHROOM_IMMUNITY == nil then GLOBAL.TEEMO_MUSHROOM_IMMUNITY = true end
+GLOBAL.TEEMO_SHOW_RANGE_INDICATOR = GetModConfigData("show_range_indicator")
+if GLOBAL.TEEMO_SHOW_RANGE_INDICATOR == nil then GLOBAL.TEEMO_SHOW_RANGE_INDICATOR = true end
 GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS = GetModConfigData("show_damage_numbers")
 if GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS == nil then GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS = true end
 
@@ -232,7 +234,7 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
     return true
 end)
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.priority = -1
-GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 8
+GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 7
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.rmb = true
 
 -- ComponentAction: 地面右クリック
