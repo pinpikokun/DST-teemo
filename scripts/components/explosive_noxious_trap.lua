@@ -109,6 +109,7 @@ function Explosive_Noxious_Trap:OnBurnt()
 
                     -- 初撃ダメージ（GetAttackedで実ダメージ適用）
                     v.components.combat:GetAttacked(counterPlayer, self.explosiveDamage, nil)
+                    TeemoShowDamageNumber(v, self.explosiveDamage, TEEMO_DMG_COLOUR_MAGIC)
 
                     if v.components.health and v.noxiousTrapDamageTask == nil and self.explosiveDotDamage > 0 then
 
@@ -132,6 +133,7 @@ function Explosive_Noxious_Trap:OnBurnt()
                             end
 
                             v.components.health:DoDelta(-dmg, nil, "noxiousTrap")
+                            TeemoShowDamageNumber(v, dmg, TEEMO_DMG_COLOUR_MAGIC)
                             if v.HUD then v.HUD.bloodover:Flash() end -- 画面を赤くフラッシュ（被ダメージ演出）
 
                         end)
