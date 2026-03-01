@@ -277,7 +277,7 @@ configuration_options = {
             {description = "7",    data = 7},
             {description = "10",   data = 10},
         },
-        default = 3,
+        default = 2,
     },
     {
         name = "mushroom_immunity",
