@@ -188,7 +188,10 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
         -- 地面クリック: クリック地点近くの敵を検索
         if target_pos then
             local px, py, pz = target_pos:Get()
-            local ents = GLOBAL.TheSim:FindEntities(px, py, pz, 2, { "_combat" }, { "player", "INLIMBO" })
+            local dx, dz = px - x, pz - z
+            local dist_sq = dx * dx + dz * dz
+            local search_radius = dist_sq <= 25 and 4 or dist_sq <= 49 and 2 or 1
+            local ents = GLOBAL.TheSim:FindEntities(px, py, pz, search_radius, { "_combat" }, { "player", "INLIMBO" })
             local best_target = nil
             local best_dist = math.huge
             for _, ent in pairs(ents) do
