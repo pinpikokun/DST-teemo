@@ -183,7 +183,9 @@ local function onhit(inst, owner, target)
             target._teemo_dart_flinched = true
             target.components.combat:GetAttacked(attacker, damage, weapon)
         else
-            target.components.health:DoDelta(-damage, nil, "blind_dart")
+            if target.components.health then
+                target.components.health:DoDelta(-damage, nil, "blind_dart")
+            end
         end
 
         -- ダメージ数字表示（初撃: 物理 → オレンジ）
