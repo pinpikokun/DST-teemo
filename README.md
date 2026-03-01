@@ -1,10 +1,6 @@
 # Captain Teemo — Don't Starve Together
 
 > *"Captain Teemo on duty."*
->
-> *Stealth, poison darts, mushroom traps, and Summoner Spells.*
->
-> *"Size doesn't mean everything."*
 
 **Captain Teemo** from League of Legends has arrived in Don't Starve Together!
 <br>Go invisible, shoot poison darts, and turn the map into a minefield.
@@ -35,9 +31,6 @@
 
 **Mushroom Expert** — All mushroom penalties negated. Never worry about early-game food again.
 
-> [!WARNING]
-> Your Blind Dart breaks when you get hit while holding it! Keep spare materials ready to craft a new one.
-
 ## Summoner Spells
 
 **Flash** — Blink through terrain and walls. Outplay everything.
@@ -46,7 +39,8 @@
 
 ---
 
-## Configuration
+> [!TIP]
+> Tweak stats, damage, skills, and more from the mod configuration screen. Make Teemo your own.
 
-Customize **13 settings** from the server config — stats, damage, skill values, and more.
-Make Teemo your own.
+> [!WARNING]
+> Your Blind Dart breaks when you get hit while holding it! Keep spare materials ready to craft a new one.
