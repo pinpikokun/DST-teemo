@@ -104,11 +104,11 @@ Assets = {
     Asset("SOUNDPACKAGE", "sound/DST-teemo.fev"),
     Asset("SOUND", "sound/DST-teemo_bank00.fsb"),
 
-    Asset( "IMAGE", "images/inventoryimages/summoner_spell_flash.tex" ),
-    Asset( "ATLAS", "images/inventoryimages/summoner_spell_flash.xml" ),
+    Asset( "IMAGE", "images/inventoryimages/DST-teemo-flash_64_noflame.tex" ),
+    Asset( "ATLAS", "images/inventoryimages/DST-teemo-flash_64_noflame.xml" ),
 
-    Asset( "IMAGE", "images/inventoryimages/summoner_spell_ignite.tex" ),
-    Asset( "ATLAS", "images/inventoryimages/summoner_spell_ignite.xml" ),
+    Asset( "IMAGE", "images/inventoryimages/DST-teemo-ignite_64_noflame.tex" ),
+    Asset( "ATLAS", "images/inventoryimages/DST-teemo-ignite_64_noflame.xml" ),
 }
 
 RemapSoundEvent( "dontstarve/characters/teemo/death_voice", "DST-teemo/dontstarve/characters/DST-teemo/death_voice" )
@@ -463,8 +463,8 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
             local pos = flashInvSlot:GetPosition()
             self.flashslot = self.toprow:AddChild(SummonerSpellSlot(self.owner, {
                 spell_name = "flash",
-                icon_atlas = "images/inventoryimages/summoner_spell_flash.xml",
-                icon_tex = "summoner_spell_flash.tex",
+                icon_atlas = "images/inventoryimages/DST-teemo-flash_64_noflame.xml",
+                icon_tex = "DST-teemo-flash_64_noflame.tex",
                 cooldown_event = "flashcooldowndirty",
                 on_activate = function(slot)
                     slot:StartFlashTargeting()
@@ -479,8 +479,8 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
             local pos = igniteInvSlot:GetPosition()
             self.igniteslot = self.toprow:AddChild(SummonerSpellSlot(self.owner, {
                 spell_name = "ignite",
-                icon_atlas = "images/inventoryimages/summoner_spell_ignite.xml",
-                icon_tex = "summoner_spell_ignite.tex",
+                icon_atlas = "images/inventoryimages/DST-teemo-ignite_64_noflame.xml",
+                icon_tex = "DST-teemo-ignite_64_noflame.tex",
                 cooldown_event = "ignitecooldowndirty",
                 on_activate = function(slot)
                     SendModRPCToServer(MOD_RPC["teemo"]["use_ignite"])
