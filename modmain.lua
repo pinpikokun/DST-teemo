@@ -152,7 +152,7 @@ RemapSoundEvent( "dontstarve/characters/teemo/attack", "DST-teemo/dontstarve/cha
 -- ========== Blind Dart 右クリック発射システム ==========
 
 -- カスタムアクション: 右クリックでBlind Dart発射
-AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
+AddAction("TEEMO_SHOOT_DART", "Auto Attack", function(act)
     local weapon = act.invobject
     if weapon == nil or not weapon:IsValid() then return false end
 
