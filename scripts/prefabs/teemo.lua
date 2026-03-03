@@ -238,6 +238,7 @@ local function stopPassive(inst)
 end
 
 local function startPassive(inst)
+    stopPassive(inst)
     updCamouflagePrm(inst)
     inst.camouflageTask = inst:DoPeriodicTask(.5, checkCamouflage)
     inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * TEEMO_SPEED_MULT

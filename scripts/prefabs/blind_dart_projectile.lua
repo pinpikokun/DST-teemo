@@ -179,13 +179,17 @@ local function onhit(inst, owner, target)
             end
         end
         -- 初撃のみ怯み、2撃目以降は怯みなし（LoL準拠: AAにスタンなし）
+        local valid_attacker = attacker ~= nil and attacker:IsValid() and attacker or nil
         if not target._teemo_dart_flinched then
             target._teemo_dart_flinched = true
-            local valid_attacker = attacker ~= nil and attacker:IsValid() and attacker or nil
             target.components.combat:GetAttacked(valid_attacker, damage, weapon)
         else
             if target.components.health then
                 target.components.health:DoDelta(-damage, nil, "blind_dart")
+            end
+            -- アグロだけ付与（怯みは発生しない）
+            if target.components.combat and valid_attacker then
+                target.components.combat:SetTarget(valid_attacker)
             end
         end
 
