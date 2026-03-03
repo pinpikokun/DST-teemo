@@ -18,7 +18,7 @@ local SummonerSpellSlot = Class(Widget, function(self, owner, config)
 
     -- スペルアイコン（クリック可能）
     self.icon = self:AddChild(ImageButton(self.icon_atlas, self.icon_tex))
-    self.icon:SetScale(1)
+    self.icon:SetScale(0.9)
     self.icon:SetOnClick(function() self:OnClick() end)
     self.icon.scale_on_focus = false
 
