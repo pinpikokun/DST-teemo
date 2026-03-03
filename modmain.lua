@@ -70,7 +70,7 @@ local STRINGS = GLOBAL.STRINGS
 
 STRINGS.CHARACTER_TITLES.teemo = "Captain Teemo"
 STRINGS.CHARACTER_NAMES.teemo = "Captain Teemo"
-STRINGS.CHARACTER_DESCRIPTIONS.teemo = "*Goes invisible when standing still\n*Has a poison blowdart\n*Can deploy Noxious Traps\n*Expert at eating mushrooms"
+STRINGS.CHARACTER_DESCRIPTIONS.teemo = "*Goes invisible when standing still\n*Has a poison blowdart\n*Can deploy Noxious Traps\n*Has Summoner Spells: Flash & Ignite\n*Expert at eating mushrooms"
 STRINGS.CHARACTER_QUOTES.teemo = "\"on duty !! \""
 STRINGS.CHARACTER_ABOUTME.teemo = "Size doesn't mean everything."
 STRINGS.CHARACTERS.TEEMO = GLOBAL.require "speech_teemo"
