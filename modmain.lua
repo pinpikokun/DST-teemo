@@ -152,7 +152,7 @@ RemapSoundEvent( "dontstarve/characters/teemo/attack", "DST-teemo/dontstarve/cha
 -- ========== Blind Dart 右クリック発射システム ==========
 
 -- カスタムアクション: 右クリックでBlind Dart発射
-AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
+AddAction("TEEMO_SHOOT_DART", "Auto Attack", function(act)
     local weapon = act.invobject
     if weapon == nil or not weapon:IsValid() then return false end
 
@@ -190,7 +190,7 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
             local px, py, pz = target_pos:Get()
             local dx, dz = px - x, pz - z
             local dist_sq = dx * dx + dz * dz
-            local search_radius = dist_sq <= 25 and 4 or dist_sq <= 49 and 2 or 1
+            local search_radius = dist_sq <= 16 and 3 or dist_sq <= 25 and 2 or 1
             local ents = GLOBAL.TheSim:FindEntities(px, py, pz, search_radius, { "_combat" }, { "player", "INLIMBO" })
             local best_target = nil
             local best_dist = math.huge
@@ -237,7 +237,7 @@ AddAction("TEEMO_SHOOT_DART", "Shoot", function(act)
     return true
 end)
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.priority = -1
-GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 7
+GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 5
 GLOBAL.ACTIONS.TEEMO_SHOOT_DART.rmb = true
 
 -- ComponentAction: 地面右クリック

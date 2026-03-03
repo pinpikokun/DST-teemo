@@ -5,7 +5,7 @@ local TeemoPoison = require("teemo_poison_util")
 local assets = {
     Asset( "ANIM", "anim/teemo.zip" ),
     Asset( "ANIM", "anim/ghost_teemo_build.zip" ),
-    Asset( "ANIM", "anim/blind-dart-target.zip" ),
+    Asset( "ANIM", "anim/blind-dart-renge-ring.zip" ),
 }
 local prefabs = {}
 
@@ -57,14 +57,17 @@ local function createRangeIndicator(inst)
     fx:AddTag("NOCLICK")
     fx.persists = false
 
-    fx.AnimState:SetBank("blind-dart-target")
-    fx.AnimState:SetBuild("blind-dart-target")
+    fx.AnimState:SetBank("blind-dart-renge")
+    fx.AnimState:SetBuild("blind-dart-renge-ring")
     fx.AnimState:SetOrientation(ANIM_ORIENTATION.OnGround)
     fx.AnimState:SetLayer(LAYER_BACKGROUND)
     fx.AnimState:SetSortOrder(3)
     fx.AnimState:SetFinalOffset(-1)
-    fx.AnimState:PlayAnimation("target-ring", true)
-    fx.AnimState:SetMultColour(0.5, 0.8, 1.0, 0.5)
+    fx.AnimState:PlayAnimation("renge-ring-circle-frameless", true)
+    fx.AnimState:SetScale(0.625, 0.625, 0.625)
+    fx.AnimState:SetMultColour(0.6, 0.9, 1.0, 0.9)
+    fx.AnimState:SetAddColour(0.5, 0.8, 1.0, 0)
+    fx.AnimState:SetBloomEffectHandle("shaders/anim.ksh")
 
     fx.entity:SetParent(inst.entity)
     fx.Transform:SetPosition(0, 0, 0)
