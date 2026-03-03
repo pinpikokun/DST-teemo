@@ -16,7 +16,7 @@ local NoxiousTrapSlot = Class(Widget, function(self, owner)
         "images/inventoryimages/noxious_trap.xml",
         "noxious_trap.tex"
     ))
-    self.icon:SetScale(0.9)
+    self.icon:SetScale(1)
     self.icon:SetOnClick(function() self:OnClick() end)
     self.icon.scale_on_focus = false
 
