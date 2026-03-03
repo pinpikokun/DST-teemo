@@ -1,5 +1,14 @@
 local TeemoPoison = require("teemo_poison_util")
 
+-- LoL テーモ トラップ爆発時セリフ
+local TRAP_EXPLODE_QUOTES = {
+    "More where that came from.",
+    "Armed and ready.",
+    "Teemo'd.",
+    "I'm everywhere.",
+    "You're welcome.",
+}
+
 local Explosive_Noxious_Trap = Class(function(self,inst)
     self.inst = inst
     self.explosiveRange = 4
@@ -39,14 +48,13 @@ local function doSlow(v)
         if v._noxiousTrapSlowAmount ~= nil then
             return
         end
-        local slowAmount = v.components.locomotor.runspeed * -0.5
+        local slowAmount = v.components.locomotor.runspeed * -0.5 -- 負の値をbonusspeedに加算して50%減速
         v._noxiousTrapSlowAmount = slowAmount
         v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + slowAmount
     end
 end
 
 local function toxicEffect(target)
-    -- 毒エフェクト
     local size = 1
     if target:HasTag("smallcreature") then
         size = 0
@@ -73,6 +81,11 @@ function Explosive_Noxious_Trap:OnBurnt()
         end
     end
 
+    -- トラップ爆発時セリフ（30%確率、deployer経由）
+    if counterPlayer and counterPlayer.components.talker and math.random() < 0.3 then
+        counterPlayer.components.talker:Say(TRAP_EXPLODE_QUOTES[math.random(#TRAP_EXPLODE_QUOTES)])
+    end
+
     -- playerは爆発対象外
     local nonTarget = "player"
     if TheNet:GetPVPEnabled() then
@@ -96,10 +109,10 @@ function Explosive_Noxious_Trap:OnBurnt()
 
                     -- 初撃ダメージ（GetAttackedで実ダメージ適用）
                     v.components.combat:GetAttacked(counterPlayer, self.explosiveDamage, nil)
+                    TeemoShowDamageNumber(v, self.explosiveDamage, TEEMO_DMG_COLOUR_MAGIC)
 
                     if v.components.health and v.noxiousTrapDamageTask == nil and self.explosiveDotDamage > 0 then
 
-                        -- 毒の効果（1秒毎
                         local dotDamage = self.explosiveDotDamage
                         v.noxiousTrapDamageTask = v:DoPeriodicTask(1.0, function()
 
@@ -112,18 +125,16 @@ function Explosive_Noxious_Trap:OnBurnt()
                                 return
                             end
 
-                            -- 毒エフェクト
                             toxicEffect(v)
 
-                            -- ダメージ（プレイヤーのみ軽減）
                             local dmg = dotDamage
                             if v:HasTag("player") then
                                 dmg = dotDamage * 0.3
                             end
 
                             v.components.health:DoDelta(-dmg, nil, "noxiousTrap")
-                            -- プレーヤーの場合画面が赤くなるやつ（PVP用)
-                            if v.HUD then v.HUD.bloodover:Flash() end
+                            TeemoShowDamageNumber(v, dmg, TEEMO_DMG_COLOUR_MAGIC)
+                            if v.HUD then v.HUD.bloodover:Flash() end -- 画面を赤くフラッシュ（被ダメージ演出）
 
                         end)
                     end

@@ -1,20 +1,17 @@
 local assets = 
 {
-   Asset("ANIM", "anim/blind_effect.zip")
+    Asset("ANIM", "anim/blind_effect.zip")
 }
 local function kill_fx(inst)
     inst.AnimState:PlayAnimation("close")
-    -- inst.components.lighttweener:StartTween(nil, 0, .9, 0.9, nil, .2)
     inst:DoTaskInTime(0.1, inst.Remove)
 end
 
 local function fn(Sim)
-	local inst = CreateEntity()
+    local inst = CreateEntity()
 
-	inst.entity:AddTransform()
+    inst.entity:AddTransform()
     inst.entity:AddAnimState()
-    -- inst.entity:AddSoundEmitter()
-    -- inst.entity:AddLight()
     inst.entity:AddNetwork()
 
     inst.AnimState:SetBank("forcefield")
@@ -27,10 +24,6 @@ local function fn(Sim)
     if not TheWorld.ismastersim then
         return inst
     end
-
-    -- inst:AddComponent("lighttweener")
-    -- inst.components.lighttweener:StartTween(inst.Light, 3, -.9, -0.9, {-1,-1,-1}, 0)
-    -- inst.components.lighttweener:StartTween(nil, 3, .9, 0.9, nil, .2)
 
     inst.persists = false
     inst.kill_fx = kill_fx

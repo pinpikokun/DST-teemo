@@ -7,16 +7,20 @@ GLOBAL.TEEMO_SANITY = GetModConfigData("sanity") or 250
 GLOBAL.TEEMO_DAMAGE_MULT = GetModConfigData("damage_multiplier") or 1.0
 GLOBAL.TEEMO_ABSORPTION = GetModConfigData("absorption") or 0
 GLOBAL.TEEMO_SPEED_MULT = GetModConfigData("speed_multiplier") or 1.25
-GLOBAL.TEEMO_BLIND_DART_DAMAGE = GetModConfigData("blind_dart_damage") or 10
+GLOBAL.TEEMO_BLIND_DART_DAMAGE = GetModConfigData("blind_dart_damage") or 5
 GLOBAL.TEEMO_BLIND_DART_DOT = GetModConfigData("blind_dart_dot") or 5
 GLOBAL.TEEMO_NOXIOUS_TRAP_DAMAGE = GetModConfigData("noxious_trap_damage") or 20
 GLOBAL.TEEMO_NOXIOUS_TRAP_DOT = GetModConfigData("noxious_trap_dot") or 10
 GLOBAL.TEEMO_BLIND_DART_DURABILITY = GetModConfigData("blind_dart_durability")
-if GLOBAL.TEEMO_BLIND_DART_DURABILITY == nil then GLOBAL.TEEMO_BLIND_DART_DURABILITY = 3 end
+if GLOBAL.TEEMO_BLIND_DART_DURABILITY == nil then GLOBAL.TEEMO_BLIND_DART_DURABILITY = 2 end
 GLOBAL.TEEMO_POISON_SPOIL_PERCENT = GetModConfigData("poison_spoil_percent")
 if GLOBAL.TEEMO_POISON_SPOIL_PERCENT == nil then GLOBAL.TEEMO_POISON_SPOIL_PERCENT = 0.7 end
 GLOBAL.TEEMO_MUSHROOM_IMMUNITY = GetModConfigData("mushroom_immunity")
 if GLOBAL.TEEMO_MUSHROOM_IMMUNITY == nil then GLOBAL.TEEMO_MUSHROOM_IMMUNITY = true end
+GLOBAL.TEEMO_SHOW_RANGE_INDICATOR = GetModConfigData("show_range_indicator")
+if GLOBAL.TEEMO_SHOW_RANGE_INDICATOR == nil then GLOBAL.TEEMO_SHOW_RANGE_INDICATOR = true end
+GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS = GetModConfigData("show_damage_numbers")
+if GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS == nil then GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS = true end
 
 -- サモナースペル設定値
 GLOBAL.TEEMO_FLASH_COOLDOWN = 300
@@ -27,6 +31,30 @@ GLOBAL.TEEMO_IGNITE_RANGE = 4
 
 -- 予約スロット数（ノクサストラップ + フラッシュ + イグナイト）
 GLOBAL.TEEMO_RESERVED_SLOTS = 3
+
+-- ダメージ数値カラータイプ
+local TEEMO_DMG_COLOUR_PHYSICAL = 1
+local TEEMO_DMG_COLOUR_MAGIC    = 2
+local TEEMO_DMG_COLOUR_TRUE     = 3
+GLOBAL.TEEMO_DMG_COLOUR_PHYSICAL = TEEMO_DMG_COLOUR_PHYSICAL
+GLOBAL.TEEMO_DMG_COLOUR_MAGIC    = TEEMO_DMG_COLOUR_MAGIC
+GLOBAL.TEEMO_DMG_COLOUR_TRUE     = TEEMO_DMG_COLOUR_TRUE
+
+-- サーバー→クライアントRPC送信ヘルパー（ダメージ数字表示）
+local function TeemoShowDamageNumber(target, damage, colour_type)
+    if not GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS then return end
+    if not GLOBAL.TheWorld.ismastersim then return end
+    if target == nil or not target:IsValid() then return end
+    local x, y, z = target.Transform:GetWorldPosition()
+    local players = GLOBAL.FindPlayersInRange(x, y, z, 40)
+    for _, player in pairs(players) do
+        GLOBAL.SendModRPCToClient(
+            GLOBAL.CLIENT_MOD_RPC["teemo"]["show_damage_number"],
+            player.userid, x, y, z, math.abs(damage), colour_type or TEEMO_DMG_COLOUR_TRUE
+        )
+    end
+end
+GLOBAL.TeemoShowDamageNumber = TeemoShowDamageNumber
 
 -- キャラクター選択画面のステータス表示用（TUNINGテーブルに登録）
 GLOBAL.TUNING.TEEMO_HEALTH = GLOBAL.TEEMO_HEALTH
@@ -50,21 +78,22 @@ STRINGS.NAMES.TEEMO = "Teemo"
 STRINGS.SKIN_NAMES.teemo_none = "Teemo"
 STRINGS.CHARACTERS.GENERIC.DESCRIBE.TEEMO = 
 {
-	GENERIC = "It's Teemo!",
-	ATTACKER = "That Teemo looks shifty...",
-	MURDERER = "Murderer!",
-	REVIVER = "Teemo, friend of ghosts.",
-	GHOST = "Teemo could use a heart.",
+    GENERIC = "It's Teemo!",
+    ATTACKER = "That Teemo looks shifty...",
+    MURDERER = "Murderer!",
+    REVIVER = "Teemo, friend of ghosts.",
+    GHOST = "Teemo could use a heart.",
 }
 
 PrefabFiles = {
-	"teemo",
-	"teemo_none",
-	"noxious_trap",
-	"explode_noxious_trap",
-	"toxic_effect_by_teemo",
-	"blind_dart",
-	"blind_effect",
+    "teemo",
+    "teemo_none",
+    "noxious_trap",
+    "explode_noxious_trap",
+    "toxic_effect_by_teemo",
+    "blind_dart",
+    "blind_dart_projectile",
+    "blind_effect",
 }
 
 Assets = {
@@ -76,14 +105,14 @@ Assets = {
 
     Asset( "IMAGE", "bigportraits/teemo.tex" ),
     Asset( "ATLAS", "bigportraits/teemo.xml" ),
-	
-	Asset( "IMAGE", "images/map_icons/teemo.tex" ),
-	Asset( "ATLAS", "images/map_icons/teemo.xml" ),
-	
-	Asset( "IMAGE", "images/avatars/avatar_teemo.tex" ),
+    
+    Asset( "IMAGE", "images/map_icons/teemo.tex" ),
+    Asset( "ATLAS", "images/map_icons/teemo.xml" ),
+    
+    Asset( "IMAGE", "images/avatars/avatar_teemo.tex" ),
     Asset( "ATLAS", "images/avatars/avatar_teemo.xml" ),
-	
-	Asset( "IMAGE", "images/avatars/avatar_ghost_teemo.tex" ),
+    
+    Asset( "IMAGE", "images/avatars/avatar_ghost_teemo.tex" ),
     Asset( "ATLAS", "images/avatars/avatar_ghost_teemo.xml" ),
 
     Asset( "IMAGE", "images/avatars/self_inspect_teemo.tex" ),
@@ -92,14 +121,14 @@ Assets = {
     Asset( "IMAGE", "bigportraits/teemo_none.tex" ),
     Asset( "ATLAS", "bigportraits/teemo_none.xml" ),
     
-	Asset( "IMAGE", "images/inventoryimages/blind_dart.tex" ),
+    Asset( "IMAGE", "images/inventoryimages/blind_dart.tex" ),
     Asset( "ATLAS", "images/inventoryimages/blind_dart.xml" ),
     
-	Asset( "IMAGE", "images/inventoryimages/noxious_trap.tex" ),
+    Asset( "IMAGE", "images/inventoryimages/noxious_trap.tex" ),
     Asset( "ATLAS", "images/inventoryimages/noxious_trap.xml" ),
 
     Asset( "IMAGE", "images/hud/teemotab.tex" ),
-   	Asset( "ATLAS", "images/hud/teemotab.xml" ),
+    Asset( "ATLAS", "images/hud/teemotab.xml" ),
 
     Asset("SOUNDPACKAGE", "sound/DST-teemo.fev"),
     Asset("SOUND", "sound/DST-teemo_bank00.fsb"),
@@ -119,6 +148,255 @@ RemapSoundEvent( "dontstarve/characters/teemo/ghost_LP", "DST-teemo/dontstarve/c
 RemapSoundEvent( "dontstarve/characters/teemo/move", "DST-teemo/dontstarve/characters/DST-teemo/move" )
 RemapSoundEvent( "dontstarve/characters/teemo/spwn", "DST-teemo/dontstarve/characters/DST-teemo/spwn" )
 RemapSoundEvent( "dontstarve/characters/teemo/attack", "DST-teemo/dontstarve/characters/DST-teemo/attack" )
+
+-- ========== Blind Dart 右クリック発射システム ==========
+
+-- カスタムアクション: 右クリックでBlind Dart発射
+AddAction("TEEMO_SHOOT_DART", "Auto Attack", function(act)
+    local weapon = act.invobject
+    if weapon == nil or not weapon:IsValid() then return false end
+
+    local doer = act.doer
+    if doer == nil or not doer:IsValid() then return false end
+
+    local target = act.target
+    local target_pos = act:GetActionPoint()
+
+    local proj = GLOBAL.SpawnPrefab("blind_dart_projectile")
+    if proj == nil then return false end
+
+    -- 攻撃者・武器の参照を格納（onhitで使用）
+    proj._teemo_weapon = weapon
+    proj._teemo_attacker = doer
+
+    -- ターゲット方向を向く
+    if target ~= nil and target:IsValid() then
+        doer:FacePoint(target.Transform:GetWorldPosition())
+    elseif target_pos ~= nil then
+        doer:FacePoint(target_pos:Get())
+    end
+
+    -- 飛翔体を攻撃者の位置に配置
+    local x, y, z = doer.Transform:GetWorldPosition()
+    proj.Transform:SetPosition(x, y, z)
+
+    if target ~= nil and target:IsValid() and target.components.combat then
+        -- エンティティへの追尾発射
+        -- NOTE: DST標準の Throw は (owner, target) の2引数。3つ目の doer は無視される
+        proj.components.projectile:Throw(weapon, target, doer)
+    else
+        -- 地面クリック: クリック地点近くの敵を検索
+        if target_pos then
+            local px, py, pz = target_pos:Get()
+            local dx, dz = px - x, pz - z
+            local dist_sq = dx * dx + dz * dz
+            local search_radius = dist_sq <= 16 and 3 or dist_sq <= 25 and 2 or 1
+            local ents = GLOBAL.TheSim:FindEntities(px, py, pz, search_radius, { "_combat" }, { "player", "INLIMBO" })
+            local best_target = nil
+            local best_dist = math.huge
+            for _, ent in pairs(ents) do
+                if ent ~= doer and ent.components.combat and ent.components.health
+                    and ent.components.health.currenthealth > 0 then
+                    local ex, ey, ez = ent.Transform:GetWorldPosition()
+                    local d = (ex - px)*(ex - px) + (ez - pz)*(ez - pz)
+                    if d < best_dist then
+                        best_dist = d
+                        best_target = ent
+                    end
+                end
+            end
+            if best_target ~= nil then
+                proj.components.projectile:Throw(weapon, best_target, doer)
+            else
+                -- 敵がいない: 視覚演出のみ（まっすぐ飛んで消える）
+                proj:RemoveComponent("projectile")
+                proj:AddTag("NOCLICK")
+                proj.AnimState:PlayAnimation("dart_pipe")
+                proj.AnimState:SetOrientation(GLOBAL.ANIM_ORIENTATION.OnGround)
+                proj:FacePoint(px, py, pz)
+                -- 発射位置をdoerの前方3ユニットにオフセット（LaunchOffset相当）
+                local dx, dz = px - x, pz - z
+                local dist = math.sqrt(dx * dx + dz * dz)
+                if dist > 0 then
+                    proj.Transform:SetPosition(x + dx / dist * 3, 0.5, z + dz / dist * 3)
+                end
+                proj.Physics:SetMotorVel(15, 0, 0)
+                proj:DoTaskInTime(0.5, function() if proj:IsValid() then proj:Remove() end end)
+            end
+        else
+            proj:Remove()
+            return false
+        end
+    end
+
+    -- カモフラージュ解除
+    if doer.disableCamouflage then
+        doer.disableCamouflage()
+    end
+
+    return true
+end)
+GLOBAL.ACTIONS.TEEMO_SHOOT_DART.priority = -1
+GLOBAL.ACTIONS.TEEMO_SHOOT_DART.distance = 5
+GLOBAL.ACTIONS.TEEMO_SHOOT_DART.rmb = true
+
+-- ComponentAction: 地面右クリック
+AddComponentAction("POINT", "weapon", function(inst, doer, pos, actions, right, target)
+    if right and inst:HasTag("blowdart") and doer:HasTag("teemo")
+        and not (doer.replica.rider and doer.replica.rider:IsRiding()) then
+        table.insert(actions, GLOBAL.ACTIONS.TEEMO_SHOOT_DART)
+    end
+end)
+
+-- ComponentAction: エンティティ右クリック
+AddComponentAction("EQUIPPED", "weapon", function(inst, doer, target, actions, right)
+    if right and inst:HasTag("blowdart") and doer:HasTag("teemo")
+        and not (doer.replica.rider and doer.replica.rider:IsRiding())
+        and target and target ~= doer and target:HasTag("_combat") then
+        table.insert(actions, GLOBAL.ACTIONS.TEEMO_SHOOT_DART)
+    end
+end)
+
+-- Stategraph ActionHandler（サーバー）
+AddStategraphActionHandler("wilson", GLOBAL.ActionHandler(GLOBAL.ACTIONS.TEEMO_SHOOT_DART, function(inst, action)
+    local equip = inst.components.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS)
+    if equip ~= nil
+        and equip:HasTag("blowdart")
+        and not (inst.components.rider and inst.components.rider:IsRiding())
+        and not (inst.components.health and inst.components.health:IsDead()) then
+        if not inst.sg:HasStateTag("attack") then
+            return "teemo_shoot_dart"
+        end
+    end
+end))
+
+-- Stategraph ActionHandler（クライアント）
+AddStategraphActionHandler("wilson_client", GLOBAL.ActionHandler(GLOBAL.ACTIONS.TEEMO_SHOOT_DART, function(inst, action)
+    local equip = inst.replica.inventory:GetEquippedItem(GLOBAL.EQUIPSLOTS.HANDS)
+    if equip ~= nil
+        and equip:HasTag("blowdart")
+        and not (inst.replica.rider and inst.replica.rider:IsRiding())
+        and not GLOBAL.IsEntityDead(inst, true) then
+        if not inst.sg:HasStateTag("attack") then
+            return "teemo_shoot_dart"
+        end
+    end
+end))
+
+-- Stategraph State: teemo_shoot_dart（サーバー）
+AddStategraphState("wilson", GLOBAL.State {
+    name = "teemo_shoot_dart",
+    tags = { "attack", "abouttoattack", "notalking", "autopredict" },
+
+    onenter = function(inst)
+        if inst.components.combat:InCooldown() then
+            inst.sg:RemoveStateTag("abouttoattack")
+            inst:ClearBufferedAction()
+            inst.sg:GoToState("idle", true)
+            return
+        end
+
+        local buffaction = inst:GetBufferedAction()
+        local target = buffaction ~= nil and buffaction.target or nil
+
+        inst.components.combat:StartAttack()
+        inst.components.locomotor:Stop()
+        inst.AnimState:PlayAnimation("dart")
+
+        if target ~= nil and target:IsValid() then
+            inst:FacePoint(target.Transform:GetWorldPosition())
+        elseif buffaction then
+            local pos = buffaction:GetActionPoint()
+            if pos then inst:FacePoint(pos:Get()) end
+        end
+
+        inst.sg.statemem.action = buffaction
+        inst.sg:SetTimeout(inst.components.combat.min_attack_period)
+    end,
+
+    ontimeout = function(inst)
+        inst.sg:RemoveStateTag("attack")
+        inst.sg:AddStateTag("idle")
+    end,
+
+    timeline = {
+        GLOBAL.TimeEvent(6 * GLOBAL.FRAMES, function(inst)
+            inst.sg:RemoveStateTag("abouttoattack")
+            inst.bufferedaction = inst.sg.statemem.action
+            inst:PerformBufferedAction()
+            inst.SoundEmitter:PlaySound("dontstarve/wilson/blowdart_shoot")
+        end),
+    },
+
+    events = {
+        GLOBAL.EventHandler("equip", function(inst) inst.sg:GoToState("idle") end),
+        GLOBAL.EventHandler("unequip", function(inst) inst.sg:GoToState("idle") end),
+        GLOBAL.EventHandler("animqueueover", function(inst)
+            if inst.AnimState:AnimDone() then inst.sg:GoToState("idle") end
+        end),
+    },
+
+    onexit = function(inst)
+        if inst.sg:HasStateTag("abouttoattack") then
+            inst.components.combat:CancelAttack()
+        end
+    end,
+})
+
+-- Stategraph State: teemo_shoot_dart（クライアント）
+AddStategraphState("wilson_client", GLOBAL.State {
+    name = "teemo_shoot_dart",
+    tags = { "attack", "notalking", "abouttoattack" },
+
+    onenter = function(inst)
+        local combat = inst.replica.combat
+        if combat:InCooldown() then
+            inst.sg:RemoveStateTag("abouttoattack")
+            inst:ClearBufferedAction()
+            inst.sg:GoToState("idle", true)
+            return
+        end
+
+        combat:StartAttack()
+        inst.components.locomotor:Stop()
+        inst.AnimState:PlayAnimation("dart")
+
+        local buffaction = inst:GetBufferedAction()
+        if buffaction ~= nil then
+            inst:PerformPreviewBufferedAction()
+            if buffaction.target ~= nil and buffaction.target:IsValid() then
+                inst:FacePoint(buffaction.target:GetPosition())
+            end
+        end
+
+        local cooldown = combat:MinAttackPeriod()
+        inst.sg:SetTimeout(math.max(cooldown, 0.5))
+    end,
+
+    ontimeout = function(inst)
+        inst.sg:RemoveStateTag("attack")
+        inst.sg:AddStateTag("idle")
+    end,
+
+    timeline = {
+        GLOBAL.TimeEvent(6 * GLOBAL.FRAMES, function(inst)
+            inst.sg:RemoveStateTag("abouttoattack")
+            inst:ClearBufferedAction()
+        end),
+    },
+
+    events = {
+        GLOBAL.EventHandler("animqueueover", function(inst)
+            if inst.AnimState:AnimDone() then inst.sg:GoToState("idle") end
+        end),
+    },
+
+    onexit = function(inst)
+        if inst.sg:HasStateTag("abouttoattack") then
+            inst.replica.combat:CancelAttack()
+        end
+    end,
+})
 
 local skin_modes = {
     {
@@ -342,6 +620,7 @@ AddModRPCHandler("teemo", "use_ignite", function(player)
         end
         -- トゥルーダメージ（DoDelta で直接HP減算、防御無視）
         v.components.health:DoDelta(-dmg, nil, "ignite")
+        TeemoShowDamageNumber(v, dmg, TEEMO_DMG_COLOUR_TRUE)
     end)
 
     -- 5秒後にDOT停止（5回目のティック確定後に停止するため+0.05）
@@ -369,6 +648,11 @@ AddModRPCHandler("teemo", "use_noxious_trap_stack", function(player)
         and player._noxiousTrapStacks
         and player._noxiousTrapStacks:value() > 0 then
         player._noxiousTrapStacks:set(player._noxiousTrapStacks:value() - 1)
+
+        -- トラップ設置時はカモフラージュ解除
+        if player.disableCamouflage then
+            player.disableCamouflage()
+        end
 
         -- 建設アニメーション（build_pre → build_loop）
         player.sg:GoToState("dolongaction")
@@ -493,3 +777,31 @@ AddClassPostConstruct("widgets/inventorybar", function(self)
     self.rebuild_pending = true
 end)
 
+-- ========== フローティングダメージ数字 クライアントRPC ==========
+
+local TEEMO_DMG_COLOURS = {
+    [1] = {1, 0.51, 0.16, 1},  -- PHYSICAL: オレンジ
+    [2] = {0.31, 0.78, 1, 1},  -- MAGIC: 水色
+    [3] = {1, 1, 1, 1},        -- TRUE: 白
+}
+
+AddClientModRPCHandler("teemo", "show_damage_number", function(x, y, z, damage, colour_type)
+    if not GLOBAL.TEEMO_SHOW_DAMAGE_NUMBERS then return end
+    local TeemoPopupNumber = require("widgets/teemo_popupnumber")
+    local player = GLOBAL.ThePlayer
+    if not (player and player.HUD and player.HUD.popupstats_root) then return end
+
+    local val = math.floor(damage + 0.5)
+    local height = math.random(30, 50)
+    local angle = (math.random() < 0.5 and 180 or 0) + GLOBAL.GetRandomMinMax(-30, 30)
+    angle = angle * GLOBAL.DEGREES
+
+    local colour = TEEMO_DMG_COLOURS[colour_type] or TEEMO_DMG_COLOURS[3]
+
+    player.HUD.popupstats_root:AddChild(
+        TeemoPopupNumber(player, tostring(val), 32,
+            GLOBAL.Vector3(x, y, z),
+            GLOBAL.Vector3(math.cos(angle), math.sin(angle), 0),
+            height, colour)
+    )
+end)

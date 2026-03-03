@@ -11,19 +11,19 @@ function CharacterSpecific:SetOwner(name)
 end
 
 function CharacterSpecific:IsStorable()
-	return self.storable
+    return self.storable
 end
 
 function CharacterSpecific:SetStorable(value)
-	self.storable = value
+    self.storable = value
 end
 
 function CharacterSpecific:GetComment()
-	return self.comment
+    return self.comment
 end
 
 function CharacterSpecific:SetComment(comment)
-	self.comment = comment
+    self.comment = comment
 end
 
 return CharacterSpecific

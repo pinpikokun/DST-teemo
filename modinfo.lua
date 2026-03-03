@@ -1,6 +1,6 @@
 -- This information tells other players more about the mod
 name = "Captain Teemo"
-description = "League of Legends."
+description = "\"Captain Teemo on duty.\"\n\nStealth, poison darts, mushroom traps, and Summoner Spells.\n\n\"Size doesn't mean everything.\""
 author = "pinpikokun"
 version = "0.2.2.3"
 
@@ -151,7 +151,7 @@ configuration_options = {
             {description = "145", data = 145},
             {description = "150", data = 150},
         },
-        default = 10,
+        default = 5,
     },
     {
         name = "blind_dart_dot",
@@ -277,7 +277,7 @@ configuration_options = {
             {description = "7",    data = 7},
             {description = "10",   data = 10},
         },
-        default = 3,
+        default = 2,
     },
     {
         name = "mushroom_immunity",
@@ -303,5 +303,25 @@ configuration_options = {
             {description = "30",  data = 30},
         },
         default = 20,
+    },
+    {
+        name = "show_range_indicator",
+        label = "Range Indicator",
+        hover = "Show Blind Dart range circle on the ground / ブラインドダート装備時に射程円を表示",
+        options = {
+            {description = "On",  data = true},
+            {description = "Off", data = false},
+        },
+        default = true,
+    },
+    {
+        name = "show_damage_numbers",
+        label = "Damage Numbers",
+        hover = "Show floating damage numbers / ダメージ数値をポップアップ表示",
+        options = {
+            {description = "On",  data = true},
+            {description = "Off", data = false},
+        },
+        default = true,
     },
 }

@@ -1,19 +1,21 @@
-local TeemoPoison = require("teemo_poison_util")
-
 local assets = {
     Asset("ANIM", "anim/blind_dart.zip"),
-	Asset("ANIM", "anim/swap_blind_dart.zip"),
+    Asset("ANIM", "anim/swap_blind_dart.zip"),
 
-	Asset("IMAGE", "images/inventoryimages/blind_dart.tex"),
-	Asset("ATLAS", "images/inventoryimages/blind_dart.xml"),
+    Asset("IMAGE", "images/inventoryimages/blind_dart.tex"),
+    Asset("ATLAS", "images/inventoryimages/blind_dart.xml"),
 }
 
 local function onequip(inst, owner)
-    -- 手に持っている時の見た目？
     owner.AnimState:OverrideSymbol("swap_object", "swap_blind_dart", "swap_blind_dart")
     owner.AnimState:Show("ARM_carry")
     owner.AnimState:Hide("ARM_normal")
     owner:AddTag("blind_dart_equipped")
+
+    -- 攻撃間隔を1.0秒に設定（遠距離武器のため連射を制限）
+    if owner.components.combat then
+        owner.components.combat.min_attack_period = 1.0
+    end
 
     -- 敵の攻撃を受けたときに耐久力を減らす（耐久度が無効なら登録しない）
     if inst.components.finiteuses then
@@ -37,6 +39,11 @@ local function onunequip(inst, owner)
     owner.AnimState:Show("ARM_normal")
     owner:RemoveTag("blind_dart_equipped")
 
+    -- 攻撃間隔を通常に戻す
+    if owner.components.combat then
+        owner.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD
+    end
+
     -- リスナー解除
     if inst._onowner_attacked then
         owner:RemoveEventCallback("attacked", inst._onowner_attacked)
@@ -44,195 +51,37 @@ local function onunequip(inst, owner)
     end
 end
 
-local function doBlindEffect(target)
-    local size = 1
-    if target:HasTag("smallcreature") then
-        size = 0
-    elseif target:HasTag("largecreature") then
-        size = 2
-    end
-
-    local fx = SpawnPrefab("blind_effect")
-    fx.entity:SetParent(target.entity)
-    fx.Transform:SetPosition(0, size, 0)
-    target.blindEffect = fx
-end
-
-local function doBlindEffectEndTask(target)
-    if target.blindEffectEndTask ~= nil then
-        target.blindEffectEndTask:Cancel()
-    end
-
-    local time = 2.0
-    if target.components.health then
-        if target.components.health.currenthealth <= 0 then
-            time = 0.5
-        end
-    end
-
-    target.blindEffectEndTask = target:DoTaskInTime(time, function(target)
-        if target.blindEffect ~= nil then
-            if target.blindEffect.kill_fx then
-                target.blindEffect:kill_fx()
-            else
-                target.blindEffect:Remove()
-            end
-            target.blindEffect = nil
-        end
-        target.blindEffectEndTask = nil
-    end)
-end
-
-local function doBlind(target)
-    -- 移動可能なクリーチャーのみブラインド（壁等に適用するとBlankOutAttacksのコールバックでクラッシュ）
-    if target.components.combat and target.components.locomotor then
-        target.components.combat:BlankOutAttacks(2.0)
-    end
-end
-
-local function toxicEffect(target)
-    local size = 1
-    if target:HasTag("smallcreature") then
-        size = 0
-    elseif target:HasTag("largecreature") then
-        size = 2
-    end
-
-    local fx = SpawnPrefab("toxic_effect_by_teemo")
-    fx.entity:SetParent(target.entity)
-    fx.Transform:SetPosition(0, size, 0)
-end
-
-local function doToxicShotEndTask(target)
-    if target.toxicShotEndTask ~= nil then
-        target.toxicShotEndTask:Cancel()
-    end
-
-    target.toxicShotEndTask = target:DoTaskInTime(4.0, function(target)
-        if target.toxicShotDamageTask ~= nil then
-            target.toxicShotDamageTask:Cancel()
-            target.toxicShotDamageTask = nil
-        end
-        target.toxicShotEndTask = nil
-        -- 毒マーク解除（他の毒DOTが残っていなければ）
-        TeemoPoison.unmarkTeemoPoisoned(target)
-    end)
-end
-
-local function doToxicShot(target)
-    -- 移動可能なクリーチャーのみ毒DOT（壁・構造物には初撃ダメージのみ）
-    if not target.components.health or target.components.health.currenthealth <= 0 or not target.components.locomotor then
-        return
-    end
-
-    -- DOT無効化時はスキップ
-    if TEEMO_BLIND_DART_DOT <= 0 then
-        return
-    end
-
-    -- 毒による食料腐敗マーク（冗長性のため、teemo.luaのonattackotherでもマーク済み）
-    TeemoPoison.markTeemoPoisoned(target)
-
-    -- DOT発動中は効果延長のみ
-    if target.toxicShotDamageTask ~= nil then
-        doToxicShotEndTask(target)
-        return
-    end
-
-    -- 毒DOT（毎秒ダメージ、4秒間）
-    target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
-        if not target:IsValid() or target.components.health == nil or target.components.health.currenthealth <= 0 then
-            if target.toxicShotDamageTask ~= nil then
-                target.toxicShotDamageTask:Cancel()
-                target.toxicShotDamageTask = nil
-            end
-            return
-        end
-
-        toxicEffect(target)
-        local dot = TEEMO_BLIND_DART_DOT
-        if target:HasTag("player") then
-            dot = dot * 0.3
-        end
-        target.components.health:DoDelta(-dot, nil, "toxicShot")
-        if target.HUD then target.HUD.bloodover:Flash() end
-    end)
-
-    doToxicShotEndTask(target)
-end
-
-local function onattack(inst, atker, target, skipsanity)
-
-    -- ブラインド効果・毒DOTは吹き矢攻撃の場合のみ
-    if inst:HasTag("blowdart") then
-
-        doBlind(target)
-        doToxicShot(target)
-
-        if target.blindEffect ~= nil then
-            doBlindEffectEndTask(target)
-            return
-        end
-
-        doBlindEffect(target)
-        doBlindEffectEndTask(target)
-
-    end
-
-end
-
 local function fn(Sim)
-	local inst = CreateEntity()
-	
-	inst.entity:AddTransform()
-	inst.entity:AddAnimState()
+    local inst = CreateEntity()
+    
+    inst.entity:AddTransform()
+    inst.entity:AddAnimState()
     inst.entity:AddSoundEmitter()
     inst.entity:AddNetwork()
 
     MakeInventoryPhysics(inst)
-    -- RemovePhysicsColliders(inst)
 
-    -- 画像の構成
     inst.AnimState:SetBank("blind_dart")
-    -- 実際の画像
     inst.AnimState:SetBuild("blind_dart")
-    -- 画像構成の何番目の画像を表示するか
     inst.AnimState:PlayAnimation("idle")
 
-    -- 攻撃の見た目
     inst:AddTag("blowdart")
-    -- 攻撃の音に使われてる？
     inst:AddTag("sharp")
 
     inst.entity:SetPristine()
 
-    -- ホストではない場合はここまで？
     if not TheWorld.ismastersim then
         return inst
     end
-	
-    -- 武器
+    
     inst:AddComponent("weapon")
-    -- ダメージ
-    inst.components.weapon:SetDamage(TEEMO_BLIND_DART_DAMAGE)
-    -- 範囲（攻撃射程、ヒット射程）
-    inst.components.weapon:SetRange(8, 10)
-    -- 攻撃効果
-    inst.components.weapon:SetOnAttack(onattack)
-    -- 吹き矢の矢を飛ばす見た目追加
-    inst.components.weapon:SetProjectile("blowdart_walrus")
+    inst.components.weapon:SetDamage(0) -- 左クリック近接は0ダメージ（右クリックでprojectile発射）
 
 
-	inst:AddComponent("inspectable")
+    inst:AddComponent("inspectable")
 
-    -- インベントリ
     inst:AddComponent("inventoryitem")
-    -- インベントリの見た目
-	inst.components.inventoryitem.atlasname = "images/inventoryimages/blind_dart.xml"
-    -- inst.components.inventoryitem.keepondeath = false (default)
-
-    -- 幽霊の攻撃（ハウント）時の処理？
-    -- MakeHauntableLaunchAndPerish(inst)
+    inst.components.inventoryitem.atlasname = "images/inventoryimages/blind_dart.xml"
 
     -- 耐久力（敵に攻撃されると減る、設定値で破壊。0 = 壊れない）
     if TEEMO_BLIND_DART_DURABILITY > 0 then
@@ -246,7 +95,6 @@ local function fn(Sim)
         inst.components.finiteuses:SetIgnoreCombatDurabilityLoss(true)
     end
 
-    -- 装備
     inst:AddComponent("equippable")
     inst.components.equippable:SetOnEquip(onequip)
     inst.components.equippable:SetOnUnequip(onunequip)

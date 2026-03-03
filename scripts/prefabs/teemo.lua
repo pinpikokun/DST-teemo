@@ -5,12 +5,31 @@ local TeemoPoison = require("teemo_poison_util")
 local assets = {
     Asset( "ANIM", "anim/teemo.zip" ),
     Asset( "ANIM", "anim/ghost_teemo_build.zip" ),
+    Asset( "ANIM", "anim/blind-dart-renge-ring.zip" ),
 }
 local prefabs = {}
 
 local NOXIOUS_TRAP_MAX_STACKS = NOXIOUS_TRAP_MAX_STACKS
 local NOXIOUS_TRAP_INITIAL_STACKS = 3
 local NOXIOUS_TRAP_RECOVERY_INTERVAL = 30
+
+-- LoL テーモ ステルス発動時セリフ
+local CAMOUFLAGE_QUOTES = {
+    "Become one with the jungle.",
+    "Now, we wait.",
+    "Patience now.",
+    "Nobody gets past Teemo.",
+}
+
+-- LoL テーモ ステルス解除時セリフ
+local AMBUSH_QUOTES = {
+    "You want Teemo? Come and get him!",
+    "I'm everywhere.",
+    "On my way.",
+    "I'll scout ahead!",
+    "Bug out!",
+    "Move!",
+}
 
 -- パッシブ「キノコの達人」: キノコのマイナスステータスを無効化
 local MUSHROOM_PREFABS = {
@@ -29,23 +48,55 @@ local function mushroomStatsMod(inst, health_delta, hunger_delta, sanity_delta, 
     return health_delta, hunger_delta, sanity_delta
 end
 
+-- Blind Dart射程円インジケーター（クライアント専用、ローカルプレイヤーのみ）
+local function createRangeIndicator(inst)
+    local fx = CreateEntity()
+    fx.entity:AddTransform()
+    fx.entity:AddAnimState()
+    fx:AddTag("CLASSIFIED")
+    fx:AddTag("NOCLICK")
+    fx.persists = false
+
+    fx.AnimState:SetBank("blind-dart-renge")
+    fx.AnimState:SetBuild("blind-dart-renge-ring")
+    fx.AnimState:SetOrientation(ANIM_ORIENTATION.OnGround)
+    fx.AnimState:SetLayer(LAYER_BACKGROUND)
+    fx.AnimState:SetSortOrder(3)
+    fx.AnimState:SetFinalOffset(-1)
+    fx.AnimState:PlayAnimation("renge-ring-circle-frameless", true)
+    fx.AnimState:SetScale(0.625, 0.625, 0.625)
+    fx.AnimState:SetMultColour(0.6, 0.9, 1.0, 0.9)
+    fx.AnimState:SetAddColour(0.5, 0.8, 1.0, 0)
+    fx.AnimState:SetBloomEffectHandle("shaders/anim.ksh")
+
+    fx.entity:SetParent(inst.entity)
+    fx.Transform:SetPosition(0, 0, 0)
+    fx:Hide()
+
+    return fx
+end
+
 local start_inv = {
     "blind_dart",
-    -- "sewing_kit",
---    "chester_eyebone",
---    "goldenaxe",
---	  "ruinshat",
-	  -- "footballhat",
-	  -- "winterhat",
---	  "flowerhat",
 }
 
 local function doCamouflage(inst)
 
     if not inst.isCamouflage then
         inst.isCamouflage = true
-        inst.AnimState:SetMultColour(.8,.8,.8,.8)
+        inst.AnimState:SetMultColour(.5,.5,.5,.8)
         inst.DynamicShadow:Enable(false)
+
+        -- カモフラージュ発動エフェクト（砂煙）
+        local puff = SpawnPrefab("shadow_puff")
+        if puff ~= nil then
+            puff.Transform:SetPosition(inst.Transform:GetWorldPosition())
+        end
+
+        -- ステルス発動時セリフ（30%確率）
+        if math.random() < 0.3 and inst.components.talker then
+            inst.components.talker:Say(CAMOUFLAGE_QUOTES[math.random(#CAMOUFLAGE_QUOTES)])
+        end
 
         -- ステルス中は敵との当たり判定を無効化（すり抜ける）
         inst.Physics:ClearCollisionMask()
@@ -73,7 +124,7 @@ local function updCamouflagePrm(inst)
     inst.camouflage_x = x
     inst.camouflage_z = z
     inst.camouflage_t = GetTime()
-    inst.camouflage_h = inst.components.health ~= nil and inst.components.health.currenthealth or 0
+    inst.camouflage_h = inst.components.health ~= nil and inst.components.health.currenthealth or 0 -- 被ダメージ検知用
 end
 
 local function disableCamouflage(inst)
@@ -85,6 +136,11 @@ local function disableCamouflage(inst)
     inst.isCamouflage = false
     inst.AnimState:SetMultColour(1.0,1.0,1.0,1.0)
     inst.DynamicShadow:Enable(true)
+
+    -- ステルス解除時セリフ（30%確率）
+    if math.random() < 0.3 and inst.components.talker then
+        inst.components.talker:Say(AMBUSH_QUOTES[math.random(#AMBUSH_QUOTES)])
+    end
 
     -- 当たり判定を復元
     inst.Physics:ClearCollisionMask()
@@ -100,14 +156,19 @@ local function disableCamouflage(inst)
         inst._blankOutTask = nil
     end
 
-    inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD - (TUNING.WILSON_ATTACK_PERIOD * 0.4)
-    if inst.resetAttackSpeedTask ~= nil then
-        inst.resetAttackSpeedTask:Cancel()
+    -- ステルス解除ボーナス: Blind Dart装備時のみ攻撃速度UP（5秒間）
+    if inst:HasTag("blind_dart_equipped") then
+        inst.components.combat.min_attack_period = 0.5
+        if inst.resetAttackSpeedTask ~= nil then
+            inst.resetAttackSpeedTask:Cancel()
+        end
+        inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
+            if inst:HasTag("blind_dart_equipped") then
+                inst.components.combat.min_attack_period = 1.0
+            end
+            inst.resetAttackSpeedTask = nil
+        end, inst)
     end
-    inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
-        inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD
-        inst.resetAttackSpeedTask = nil
-    end, inst)
 
 end
 
@@ -136,7 +197,7 @@ local function checkCamouflage(inst)
     local x, _, z = inst.Transform:GetWorldPosition()
     local running = inst.components.locomotor:WantsToRun()
     if x == inst.camouflage_x and z == inst.camouflage_z and not running then
-        if GetTime() - inst.camouflage_t > 1.5 then doCamouflage(inst) end
+        if GetTime() - inst.camouflage_t > 3 then doCamouflage(inst) end
     else
         disableCamouflage(inst)
     end
@@ -237,8 +298,8 @@ local function onDeath(inst, data)
 end
 
 local common_postinit = function(inst)
-	inst.soundsname = "teemo"
-	inst.MiniMapEntity:SetIcon( "teemo.tex" )
+    inst.soundsname = "teemo"
+    inst.MiniMapEntity:SetIcon( "teemo.tex" )
     inst:AddTag("teemo")
 
     -- talk_LPを1回再生に変更（ループ・途中停止を防止）
@@ -282,6 +343,7 @@ local common_postinit = function(inst)
     -- 3フレーム間隔（100ms）: 毎フレーム実行の負荷を軽減しつつ、視覚的な遅延は人間に知覚できないレベル
     inst._dartHiding = false
     inst:DoPeriodicTask(3 * FRAMES, function()
+        -- 上向き攻撃時にblind_dartが体の下にはみ出る対策
         if inst:HasTag("blind_dart_equipped") then
             local isUp = inst.AnimState:GetCurrentFacing() == FACING_UP
             local isAttacking = inst.AnimState:IsCurrentAnimation("dart")
@@ -297,24 +359,34 @@ local common_postinit = function(inst)
                 inst._dartHiding = false
             end
         end
+
+        -- 射程円インジケーターの表示/非表示
+        if inst._rangeIndicator then
+            if inst:HasTag("blind_dart_equipped") and not inst:HasTag("playerghost") then
+                inst._rangeIndicator:Show()
+            else
+                inst._rangeIndicator:Hide()
+            end
+        end
     end)
+
+    -- 射程円インジケーター生成（ローカルプレイヤーのみ、設定でON時）
+    if not TheNet:IsDedicated() and TEEMO_SHOW_RANGE_INDICATOR then
+        inst:DoTaskInTime(0, function()
+            if inst ~= ThePlayer then return end
+            inst._rangeIndicator = createRangeIndicator(inst)
+        end)
+    end
 end
 
 
--- ACTIONS.GIVE.fn = function(act)
---     if act.target ~= nil and act.target.components.trader ~= nil then
---         act.target.components.trader:AcceptGift(act.doer, act.invobject)
---         return true
---     end
--- end
-
 local master_postinit = function(inst)
 
-	inst.components.health:SetMaxHealth(TEEMO_HEALTH)
-	inst.components.hunger:SetMax(TEEMO_HUNGER)
-	inst.components.sanity:SetMax(TEEMO_SANITY)
-	inst.components.combat.damagemultiplier = TEEMO_DAMAGE_MULT
-	inst.components.health:SetAbsorptionAmount(TEEMO_ABSORPTION)
+    inst.components.health:SetMaxHealth(TEEMO_HEALTH)
+    inst.components.hunger:SetMax(TEEMO_HUNGER)
+    inst.components.sanity:SetMax(TEEMO_SANITY)
+    inst.components.combat.damagemultiplier = TEEMO_DAMAGE_MULT
+    inst.components.health:SetAbsorptionAmount(TEEMO_ABSORPTION)
 
     -- パッシブ「キノコの達人」
     if TEEMO_MUSHROOM_IMMUNITY then
@@ -323,6 +395,9 @@ local master_postinit = function(inst)
 
     startPassive(inst)
 
+    -- modmain.lua等の外部スクリプトからカモフラージュ解除を呼べるよう公開
+    inst.disableCamouflage = function() disableCamouflage(inst) end
+
     -- スポーン時にspwnボイスを再生
     inst:DoTaskInTime(0.5, function()
         if inst:IsValid() then
@@ -330,7 +405,6 @@ local master_postinit = function(inst)
         end
     end)
 
---    inst:ListenForEvent("performaction", function() disableCamouflage(inst) end)
     inst:ListenForEvent("buildsuccess", function() disableCamouflage(inst) end)
     inst:ListenForEvent("equipped", function() disableCamouflage(inst) end)
     inst:ListenForEvent("onpickup", function() disableCamouflage(inst) end)
