@@ -1,6 +1,6 @@
 ---
-name: git-branch-dst
-description: "DST-teemo プロジェクトの Git ブランチ命名規則。ブランチ作成時に使用する。"
+name: git-branch-claude
+description: "Claude Code が Git を操作するときのルール。ブランチ作成・コミット・プッシュ時に使用する。"
 ---
 
 # Git ブランチ命名規則
