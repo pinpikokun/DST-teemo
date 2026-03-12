@@ -2,7 +2,7 @@
 name = "Captain Teemo"
 description = "\"Captain Teemo on duty.\"\n\nStealth, poison darts, mushroom traps, and Summoner Spells.\n\n\"Size doesn't mean everything.\""
 author = "pinpikokun"
-version = "0.2.2.3"
+version = "0.9.0"
 
 -- This is the URL name of the mod's thread on the forum; the part after the ? and before the first & in the url
 forumthread = ""
