@@ -6,32 +6,24 @@ local CharacterSpecific = Class(function(self, inst)
     self.comment = "That does not belong to me."
 end)
 
-function CharacterSpecific:CanPickUp(doer)
-	if doer and doer.prefab ~= self.character then
-		return false
-	end
-
-	return true
-end
-
 function CharacterSpecific:SetOwner(name)
     self.character = name
 end
 
 function CharacterSpecific:IsStorable()
-	return self.storable
+    return self.storable
 end
 
 function CharacterSpecific:SetStorable(value)
-	self.storable = value
+    self.storable = value
 end
 
 function CharacterSpecific:GetComment()
-	return self.comment
+    return self.comment
 end
 
 function CharacterSpecific:SetComment(comment)
-	self.comment = comment
+    self.comment = comment
 end
 
 return CharacterSpecific

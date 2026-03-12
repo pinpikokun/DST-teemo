@@ -1,52 +1,130 @@
 
 local MakePlayerCharacter = require ("prefabs/player_common")
+local TeemoPoison = require("teemo_poison_util")
 
 local assets = {
     Asset( "ANIM", "anim/teemo.zip" ),
     Asset( "ANIM", "anim/ghost_teemo_build.zip" ),
+    Asset( "ANIM", "anim/blind-dart-renge-ring.zip" ),
 }
 local prefabs = {}
 
+local NOXIOUS_TRAP_MAX_STACKS = NOXIOUS_TRAP_MAX_STACKS
+local NOXIOUS_TRAP_INITIAL_STACKS = 3
+local NOXIOUS_TRAP_RECOVERY_INTERVAL = 30
+
+-- LoL テーモ ステルス発動時セリフ
+local CAMOUFLAGE_QUOTES = {
+    "Become one with the jungle.",
+    "Now, we wait.",
+    "Patience now.",
+    "Nobody gets past Teemo.",
+}
+
+-- LoL テーモ ステルス解除時セリフ
+local AMBUSH_QUOTES = {
+    "You want Teemo? Come and get him!",
+    "I'm everywhere.",
+    "On my way.",
+    "I'll scout ahead!",
+    "Bug out!",
+    "Move!",
+}
+
+-- パッシブ「キノコの達人」: キノコのマイナスステータスを無効化
+local MUSHROOM_PREFABS = {
+    red_cap = true, red_cap_cooked = true,
+    green_cap = true, green_cap_cooked = true,
+    blue_cap = true, blue_cap_cooked = true,
+    moon_cap = true, moon_cap_cooked = true,
+}
+
+local function mushroomStatsMod(inst, health_delta, hunger_delta, sanity_delta, food, feeder)
+    if food ~= nil and MUSHROOM_PREFABS[food.prefab] then
+        if health_delta < 0 then health_delta = 0 end
+        if hunger_delta < 0 then hunger_delta = 0 end
+        if sanity_delta < 0 then sanity_delta = 0 end
+    end
+    return health_delta, hunger_delta, sanity_delta
+end
+
+-- Blind Dart射程円インジケーター（クライアント専用、ローカルプレイヤーのみ）
+local function createRangeIndicator(inst)
+    local fx = CreateEntity()
+    fx.entity:AddTransform()
+    fx.entity:AddAnimState()
+    fx:AddTag("CLASSIFIED")
+    fx:AddTag("NOCLICK")
+    fx.persists = false
+
+    fx.AnimState:SetBank("blind-dart-renge")
+    fx.AnimState:SetBuild("blind-dart-renge-ring")
+    fx.AnimState:SetOrientation(ANIM_ORIENTATION.OnGround)
+    fx.AnimState:SetLayer(LAYER_BACKGROUND)
+    fx.AnimState:SetSortOrder(3)
+    fx.AnimState:SetFinalOffset(-1)
+    fx.AnimState:PlayAnimation("renge-ring-circle-frameless", true)
+    fx.AnimState:SetScale(0.625, 0.625, 0.625)
+    fx.AnimState:SetMultColour(0.6, 0.9, 1.0, 0.9)
+    fx.AnimState:SetAddColour(0.5, 0.8, 1.0, 0)
+    fx.AnimState:SetBloomEffectHandle("shaders/anim.ksh")
+
+    fx.entity:SetParent(inst.entity)
+    fx.Transform:SetPosition(0, 0, 0)
+    fx:Hide()
+
+    return fx
+end
+
 local start_inv = {
-    "red_cap",
-    "red_cap",
-    "red_cap",
-    "green_cap",
-    "blue_cap",
-    "noxious_trap",
     "blind_dart",
-    -- "sewing_kit",
---    "chester_eyebone",
---    "goldenaxe",
---	  "ruinshat",
-	  -- "footballhat",
-	  -- "winterhat",
---	  "flowerhat",
 }
 
 local function doCamouflage(inst)
 
     if not inst.isCamouflage then
         inst.isCamouflage = true
-        inst:AddTag("notarget")
-        inst.AnimState:SetMultColour(.1,.1,.1,.5)
+        inst.AnimState:SetMultColour(.5,.5,.5,.8)
         inst.DynamicShadow:Enable(false)
-    end
 
-    local x,y,z = inst.Transform:GetWorldPosition() 
-    local ents = TheSim:FindEntities(x, y, z, 20)
-    for k,v in pairs(ents) do
-        if v.components.combat and v.components.combat.target == inst then
-            v.components.combat:BlankOutAttacks(.5)
+        -- カモフラージュ発動エフェクト（砂煙）
+        local puff = SpawnPrefab("shadow_puff")
+        if puff ~= nil then
+            puff.Transform:SetPosition(inst.Transform:GetWorldPosition())
         end
+
+        -- ステルス発動時セリフ（30%確率）
+        if math.random() < 0.3 and inst.components.talker then
+            inst.components.talker:Say(CAMOUFLAGE_QUOTES[math.random(#CAMOUFLAGE_QUOTES)])
+        end
+
+        -- ステルス中は敵との当たり判定を無効化（すり抜ける）
+        inst.Physics:ClearCollisionMask()
+        inst.Physics:CollidesWith(COLLISION.WORLD)
+        inst.Physics:CollidesWith(COLLISION.OBSTACLES)
+        inst.Physics:CollidesWith(COLLISION.SMALLOBSTACLES)
+
+        -- ステルス中、敵の攻撃を継続的にブロック（ターゲットは維持）
+        local function blankNearbyAttacks()
+            local x,y,z = inst.Transform:GetWorldPosition()
+            local ents = TheSim:FindEntities(x, y, z, 20, {"_combat"})
+            for k,v in pairs(ents) do
+                if v.components.combat and v.components.combat.target == inst then
+                    v.components.combat:BlankOutAttacks(1)
+                end
+            end
+        end
+        blankNearbyAttacks()
+        inst._blankOutTask = inst:DoPeriodicTask(.5, blankNearbyAttacks)
     end
 end
 
 local function updCamouflagePrm(inst)
-    local pos = Vector3(inst.Transform:GetWorldPosition())
-    inst.camouflage_p = pos
+    local x, _, z = inst.Transform:GetWorldPosition()
+    inst.camouflage_x = x
+    inst.camouflage_z = z
     inst.camouflage_t = GetTime()
-    inst.camouflage_h = inst.components.health.currenthealth
+    inst.camouflage_h = inst.components.health ~= nil and inst.components.health.currenthealth or 0 -- 被ダメージ検知用
 end
 
 local function disableCamouflage(inst)
@@ -56,20 +134,57 @@ local function disableCamouflage(inst)
     if not inst.isCamouflage then return end
 
     inst.isCamouflage = false
-    inst:RemoveTag("notarget")
     inst.AnimState:SetMultColour(1.0,1.0,1.0,1.0)
     inst.DynamicShadow:Enable(true)
 
-    inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD - (TUNING.WILSON_ATTACK_PERIOD * 0.4)
-    inst:DoTaskInTime(3.0, function(inst)
-        inst.components.combat.min_attack_period = TUNING.WILSON_ATTACK_PERIOD
-    end, inst)
+    -- ステルス解除時セリフ（30%確率）
+    if math.random() < 0.3 and inst.components.talker then
+        inst.components.talker:Say(AMBUSH_QUOTES[math.random(#AMBUSH_QUOTES)])
+    end
+
+    -- 当たり判定を復元
+    inst.Physics:ClearCollisionMask()
+    inst.Physics:CollidesWith(COLLISION.WORLD)
+    inst.Physics:CollidesWith(COLLISION.OBSTACLES)
+    inst.Physics:CollidesWith(COLLISION.SMALLOBSTACLES)
+    inst.Physics:CollidesWith(COLLISION.CHARACTERS)
+    inst.Physics:CollidesWith(COLLISION.GIANTS)
+
+    -- ステルス中の攻撃ブロックを停止
+    if inst._blankOutTask then
+        inst._blankOutTask:Cancel()
+        inst._blankOutTask = nil
+    end
+
+    -- ステルス解除ボーナス: Blind Dart装備時のみ攻撃速度UP（5秒間）
+    if inst:HasTag("blind_dart_equipped") then
+        inst.components.combat.min_attack_period = 0.5
+        if inst.resetAttackSpeedTask ~= nil then
+            inst.resetAttackSpeedTask:Cancel()
+        end
+        inst.resetAttackSpeedTask = inst:DoTaskInTime(5.0, function(inst)
+            if inst:HasTag("blind_dart_equipped") then
+                inst.components.combat.min_attack_period = 1.0
+            end
+            inst.resetAttackSpeedTask = nil
+        end, inst)
+    end
 
 end
 
 local function checkCamouflage(inst)
 
-    if inst.components.sanity:GetPercent() < .3 then
+    if inst.components.health == nil then
+        return
+    end
+
+    -- 死亡タイミングとタスク実行が競合した場合のクラッシュ防止
+    if inst.components.locomotor == nil then
+        return
+    end
+
+    -- 騎乗中はカモフラージュを無効化（ビーファロー、Woby、MOD追加マウント全対応）
+    if inst.components.rider ~= nil and inst.components.rider:IsRiding() then
         disableCamouflage(inst)
         return
     end
@@ -79,10 +194,10 @@ local function checkCamouflage(inst)
         return
     end
 
-    local pos = Vector3(inst.Transform:GetWorldPosition())
+    local x, _, z = inst.Transform:GetWorldPosition()
     local running = inst.components.locomotor:WantsToRun()
-    if pos == inst.camouflage_p and not running then
-        if GetTime() - inst.camouflage_t > 2.0 then doCamouflage(inst) end
+    if x == inst.camouflage_x and z == inst.camouflage_z and not running then
+        if GetTime() - inst.camouflage_t > 3 then doCamouflage(inst) end
     else
         disableCamouflage(inst)
     end
@@ -91,8 +206,12 @@ end
 local function onAttacked(inst, data)
     disableCamouflage(inst)
     inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED
+    if inst.resetMoveQuickTask ~= nil then
+        inst.resetMoveQuickTask:Cancel()
+    end
     inst.resetMoveQuickTask = inst:DoTaskInTime(5.0, function(inst)
-        inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * 1.26
+        inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * TEEMO_SPEED_MULT
+        inst.resetMoveQuickTask = nil
     end, inst)
 end
 
@@ -102,140 +221,286 @@ local function stopPassive(inst)
         inst.camouflageTask = nil
     end
 
+    if inst._blankOutTask ~= nil then
+        inst._blankOutTask:Cancel()
+        inst._blankOutTask = nil
+    end
+
     if inst.resetMoveQuickTask ~= nil then
         inst.resetMoveQuickTask:Cancel()
         inst.resetMoveQuickTask = nil
     end
+
+    if inst.resetAttackSpeedTask ~= nil then
+        inst.resetAttackSpeedTask:Cancel()
+        inst.resetAttackSpeedTask = nil
+    end
 end
 
 local function startPassive(inst)
+    stopPassive(inst)
     updCamouflagePrm(inst)
     inst.camouflageTask = inst:DoPeriodicTask(.5, checkCamouflage)
-    inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * 1.26
+    inst.components.locomotor.runspeed = TUNING.WILSON_RUN_SPEED * TEEMO_SPEED_MULT
+end
+
+local function stopNoxiousTrapRecovery(inst)
+    if inst._noxiousTrapRecoveryTask ~= nil then
+        inst._noxiousTrapRecoveryTask:Cancel()
+        inst._noxiousTrapRecoveryTask = nil
+    end
+end
+
+local function startNoxiousTrapRecovery(inst)
+    stopNoxiousTrapRecovery(inst)
+    inst._noxiousTrapTimer = inst._noxiousTrapTimer or 0
+    inst._noxiousTrapRecoveryTask = inst:DoPeriodicTask(1, function()
+        local stacks = inst._noxiousTrapStacks:value()
+        if stacks >= NOXIOUS_TRAP_MAX_STACKS then
+            inst._noxiousTrapTimer = 0
+            return
+        end
+        inst._noxiousTrapTimer = inst._noxiousTrapTimer + 1
+        if inst._noxiousTrapTimer >= NOXIOUS_TRAP_RECOVERY_INTERVAL then
+            inst._noxiousTrapTimer = 0
+            inst._noxiousTrapStacks:set(stacks + 1)
+        end
+    end)
+end
+
+local function stopSpellCooldownTask(inst)
+    if inst._spellCooldownTask ~= nil then
+        inst._spellCooldownTask:Cancel()
+        inst._spellCooldownTask = nil
+    end
+end
+
+local function startSpellCooldownTask(inst)
+    stopSpellCooldownTask(inst)
+    inst._spellCooldownTask = inst:DoPeriodicTask(1, function()
+        local fc = inst._flashCooldown:value()
+        if fc > 0 then
+            inst._flashCooldown:set(fc - 1)
+        end
+        local ic = inst._igniteCooldown:value()
+        if ic > 0 then
+            inst._igniteCooldown:set(ic - 1)
+        end
+    end)
 end
 
 local function onDeath(inst, data)
     inst.deathcause = data ~= nil and data.cause or "unknown"
     if inst.deathcause == "file_load" then return end
+    disableCamouflage(inst)
     stopPassive(inst)
+    stopNoxiousTrapRecovery(inst)
+    -- サモナースペルのクールダウンは死亡中も継続（LoL準拠）
 end
 
 local common_postinit = function(inst)
-	inst.soundsname = "teemo"
-	inst.MiniMapEntity:SetIcon( "teemo.tex" )
+    inst.soundsname = "teemo"
+    inst.MiniMapEntity:SetIcon( "teemo.tex" )
     inst:AddTag("teemo")
-end
 
-local function doToxicShotEndTask(target)
+    -- talk_LPを1回再生に変更（ループ・途中停止を防止）
+    inst:ListenForEvent("ontalk", function()
+        inst:DoTaskInTime(0, function()
+            -- ステートグラフが開始したループ再生を停止
+            inst.SoundEmitter:KillSound("talk")
+            -- 前回のボイスを停止してから1回再生
+            inst.SoundEmitter:KillSound("teemo_voice")
+            inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/talk_LP", "teemo_voice")
+        end)
+    end)
 
-    if target.toxicShotEndTask ~= nil then
-        target.toxicShotEndTask:Cancel()
-    end
+    -- ノクサストラップ スタック数ネットワーク変数（クライアント同期用）
+    inst._noxiousTrapStacks = net_byte(inst.GUID, "teemo._noxiousTrapStacks", "noxioustrapstacksdirty")
 
-    target.toxicShotEndTask = target:DoTaskInTime(4.0, function(target)
-        if target.toxicShotDamageTask ~= nil then
-            target.toxicShotDamageTask:Cancel()
-            target.toxicShotDamageTask = nil
-        end
-    end, target)
-end
+    -- サモナースペル クールダウン ネットワーク変数（クライアント同期用）
+    inst._flashCooldown = net_ushortint(inst.GUID, "teemo._flashCooldown", "flashcooldowndirty")
+    inst._igniteCooldown = net_ushortint(inst.GUID, "teemo._igniteCooldown", "ignitecooldowndirty")
 
-local function toxicEffect(target)
-    -- 毒エフェクト
-    local size = 1
-    if target:HasTag("smallcreature") then
-        size = 0
-    elseif target:HasTag("largecreature") then
-        size = 2
-    end
+    -- サーバーからクライアントへのサウンド通知用 net_event
+    inst._sound_spwn   = net_event(inst.GUID, "teemo._sound_spwn")
+    inst._sound_attack = net_event(inst.GUID, "teemo._sound_attack")
+    inst._sound_emote  = net_event(inst.GUID, "teemo._sound_emote")
+    inst._sound_move   = net_event(inst.GUID, "teemo._sound_move")
 
-    local fx = SpawnPrefab("toxic_effect_by_teemo")
-    fx.entity:SetParent(target.entity)
-    fx.Transform:SetPosition(0, size, 0)
-end
+    inst:ListenForEvent("teemo._sound_spwn", function()
+        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/spwn")
+    end)
+    inst:ListenForEvent("teemo._sound_attack", function()
+        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/attack")
+    end)
+    inst:ListenForEvent("teemo._sound_emote", function()
+        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/emote")
+    end)
+    inst:ListenForEvent("teemo._sound_move", function()
+        inst.SoundEmitter:PlaySound("dontstarve/characters/teemo/move")
+    end)
 
-local function toxicShot(inst, data)
-    local target = data.target
+    -- 上向き攻撃時にblind_dartが体の下にはみ出る対策（クライアント側）
+    -- 3フレーム間隔（100ms）: 毎フレーム実行の負荷を軽減しつつ、視覚的な遅延は人間に知覚できないレベル
+    inst._dartHiding = false
+    inst:DoPeriodicTask(3 * FRAMES, function()
+        -- 上向き攻撃時にblind_dartが体の下にはみ出る対策
+        if inst:HasTag("blind_dart_equipped") then
+            local isUp = inst.AnimState:GetCurrentFacing() == FACING_UP
+            local isAttacking = inst.AnimState:IsCurrentAnimation("dart")
+                             or inst.AnimState:IsCurrentAnimation("dart_pre")
 
-    if target.components.health then
-        -- ヘルスが無い場合は何もしない
-        if target.components.health.currenthealth <= 0 then
-            return
-        end
-
-        -- 毒エフェクト
-        toxicEffect(target)
-        target.components.health:DoDelta(-10, nil, "toxicShot")
-    end
-
-    -- toxicShot発動中は効果延長
-    if target.toxicShotDamageTask ~= nil then
-        doToxicShotEndTask(target)
-        return
-    end
-
-    if target.components.combat then
-
-        if target.components.health then
-            -- if target.toxicShotDamageTask ~= nil then
-            --     target.toxicShotDamageTask:Cancel()
-            --     target.toxicShotDamageTask = nil
-            -- end
-            
-            -- 毒の効果（1秒毎
-            target.toxicShotDamageTask = target:DoPeriodicTask(1.0, function()
-
-                -- ヘルスが無い場合は何もしない
-                if target.components.health.currenthealth <= 0 then
-                    return
+            if isUp and isAttacking then
+                if not inst._dartHiding then
+                    inst._dartHiding = true
+                    inst.AnimState:SetSymbolMultColour("swap_object", 0, 0, 0, 0)
                 end
-
-                -- 毒エフェクト
-                toxicEffect(target)
-
-                -- ダメージ
-                local dmg = 6
-                target.components.health:DoDelta(-dmg, nil, "toxicShot")
-                -- プレーヤーの場合画面が赤くなるやつ（PVP用)
-                if target.HUD then target.HUD.bloodover:Flash() end
-
-            end)
+            elseif inst._dartHiding then
+                inst.AnimState:SetSymbolMultColour("swap_object", 1, 1, 1, 1)
+                inst._dartHiding = false
+            end
         end
 
-        doToxicShotEndTask(target)
+        -- 射程円インジケーターの表示/非表示
+        if inst._rangeIndicator then
+            if inst:HasTag("blind_dart_equipped") and not inst:HasTag("playerghost") then
+                inst._rangeIndicator:Show()
+            else
+                inst._rangeIndicator:Hide()
+            end
+        end
+    end)
+
+    -- 射程円インジケーター生成（ローカルプレイヤーのみ、設定でON時）
+    if not TheNet:IsDedicated() and TEEMO_SHOW_RANGE_INDICATOR then
+        inst:DoTaskInTime(0, function()
+            if inst ~= ThePlayer then return end
+            inst._rangeIndicator = createRangeIndicator(inst)
+        end)
     end
 end
 
--- ACTIONS.GIVE.fn = function(act)
---     if act.target ~= nil and act.target.components.trader ~= nil then
---         act.target.components.trader:AcceptGift(act.doer, act.invobject)
---         return true
---     end
--- end
 
 local master_postinit = function(inst)
 
-	inst.components.health:SetMaxHealth(100)
-	inst.components.hunger:SetMax(100)
-	inst.components.sanity:SetMax(100)
+    inst.components.health:SetMaxHealth(TEEMO_HEALTH)
+    inst.components.hunger:SetMax(TEEMO_HUNGER)
+    inst.components.sanity:SetMax(TEEMO_SANITY)
+    inst.components.combat.damagemultiplier = TEEMO_DAMAGE_MULT
+    inst.components.health:SetAbsorptionAmount(TEEMO_ABSORPTION)
+
+    -- パッシブ「キノコの達人」
+    if TEEMO_MUSHROOM_IMMUNITY then
+        inst.components.eater.custom_stats_mod_fn = mushroomStatsMod
+    end
 
     startPassive(inst)
 
---    inst:ListenForEvent("performaction", function() disableCamouflage(inst) end)
+    -- modmain.lua等の外部スクリプトからカモフラージュ解除を呼べるよう公開
+    inst.disableCamouflage = function() disableCamouflage(inst) end
+
+    -- スポーン時にspwnボイスを再生
+    inst:DoTaskInTime(0.5, function()
+        if inst:IsValid() then
+            inst._sound_spwn:push()
+        end
+    end)
+
     inst:ListenForEvent("buildsuccess", function() disableCamouflage(inst) end)
     inst:ListenForEvent("equipped", function() disableCamouflage(inst) end)
     inst:ListenForEvent("onpickup", function() disableCamouflage(inst) end)
     inst:ListenForEvent("ondropped", function() disableCamouflage(inst) end)
     inst:ListenForEvent("oneatsomething", function() disableCamouflage(inst) end)
     inst:ListenForEvent("oneaten", function() disableCamouflage(inst) end)
-    inst:ListenForEvent("working", function() disableCamouflage(inst) end)
-    inst:ListenForEvent("onattackother", function() disableCamouflage(inst) end)
+    inst:ListenForEvent("working", function()
+        disableCamouflage(inst)
+        -- 作業時に一定確率でemoteボイスを再生
+        if math.random() < 0.25 then
+            inst._sound_emote:push()
+        end
+    end)
+    -- 採取時に一定確率でemoteボイスを再生
+    inst:ListenForEvent("picksomething", function()
+        if math.random() < 0.25 then
+            inst._sound_emote:push()
+        end
+    end)
+    -- 収穫時に一定確率でemoteボイスを再生
+    inst:ListenForEvent("harvest", function()
+        if math.random() < 0.25 then
+            inst._sound_emote:push()
+        end
+    end)
+    inst:ListenForEvent("onattackother", function(inst, data)
+        disableCamouflage(inst)
+        -- Blind Dart攻撃時、GetAttackedの前に毒マークを設定（初撃即死でも食料腐敗を適用）
+        if data and data.weapon and data.weapon:HasTag("blowdart") and data.target then
+            TeemoPoison.markTeemoPoisoned(data.target)
+        end
+        -- 攻撃時に一定確率でattackボイスを再生
+        if math.random() < 0.15 then
+            inst._sound_attack:push()
+        end
+    end)
     inst:ListenForEvent("attacked", onAttacked)
     inst:ListenForEvent("death", onDeath)
-    inst:ListenForEvent("ms_respawnedfromghost", function() startPassive(inst) end)
+    inst:ListenForEvent("ms_respawnedfromghost", function()
+        startPassive(inst)
+        startNoxiousTrapRecovery(inst)
+        startSpellCooldownTask(inst)
+        -- リスポーン時にspwnボイスを再生
+        inst:DoTaskInTime(0.5, function()
+            if inst:IsValid() then
+                inst._sound_spwn:push()
+            end
+        end)
+    end)
 
-    -- 攻撃を当てた時のイベント
-    inst:ListenForEvent("onhitother", toxicShot)
+    -- 最後の3スロットを専用スロットにする（ノクサストラップ + フラッシュ + イグナイト）
+    local _CanTakeItemInSlot = inst.components.inventory.CanTakeItemInSlot
+    rawset(inst.components.inventory, "CanTakeItemInSlot", function(self, item, slot)
+        if slot > self.maxslots - TEEMO_RESERVED_SLOTS then return false end
+        return _CanTakeItemInSlot(self, item, slot)
+    end)
+
+    -- ノクサストラップ スタック管理
+    inst._noxiousTrapStacks:set(NOXIOUS_TRAP_INITIAL_STACKS)
+    inst._noxiousTrapTimer = 0
+    startNoxiousTrapRecovery(inst)
+
+    -- サモナースペル クールダウン管理
+    inst._flashCooldown:set(0)
+    inst._igniteCooldown:set(0)
+    startSpellCooldownTask(inst)
+
+    -- セーブ/ロード
+    local _OnSave = inst.OnSave
+    inst.OnSave = function(inst, data)
+        if _OnSave then _OnSave(inst, data) end
+        data.noxious_trap_stacks = inst._noxiousTrapStacks:value()
+        data.noxious_trap_timer = inst._noxiousTrapTimer
+        data.flash_cooldown = inst._flashCooldown:value()
+        data.ignite_cooldown = inst._igniteCooldown:value()
+    end
+
+    local _OnLoad = inst.OnLoad
+    inst.OnLoad = function(inst, data)
+        if _OnLoad then _OnLoad(inst, data) end
+        if data then
+            if data.noxious_trap_stacks then
+                inst._noxiousTrapStacks:set(data.noxious_trap_stacks)
+            end
+            if data.noxious_trap_timer then
+                inst._noxiousTrapTimer = data.noxious_trap_timer
+            end
+            if data.flash_cooldown then
+                inst._flashCooldown:set(data.flash_cooldown)
+            end
+            if data.ignite_cooldown then
+                inst._igniteCooldown:set(data.ignite_cooldown)
+            end
+        end
+    end
 
 end
 

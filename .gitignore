@@ -1,0 +1,60 @@
+# Project
+doc/
+
+# Claude Code
+.claude/settings.local.json
+.claude/worktrees/
+
+# OS 自動生成ファイル
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+
+# エディタ・IDE
+*.swp
+*.swo
+*~
+*.bak
+*.tmp
+*.orig
+.vscode/
+.idea/
+*.sublime-workspace
+*.sublime-project
+
+# ログ
+*.log
+
+# Python 仮想環境
+venv/
+.venv/
+env/
+.env/
+__pycache__/
+*.pyc
+*.pyo
+
+# Node.js
+node_modules/
+package-lock.json
+yarn.lock
+
+# ビルド・出力
+dist/
+build/
+out/
+*.exe
+*.dll
+*.so
+*.dylib
+
+# パッケージマネージャ・キャッシュ
+.npm/
+.yarn/
+.cache/
+*.tgz

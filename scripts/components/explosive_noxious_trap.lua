@@ -1,9 +1,25 @@
+local TeemoPoison = require("teemo_poison_util")
+
+-- LoL テーモ トラップ爆発時セリフ
+local TRAP_EXPLODE_QUOTES = {
+    "More where that came from.",
+    "Armed and ready.",
+    "Teemo'd.",
+    "I'm everywhere.",
+    "You're welcome.",
+}
+
 local Explosive_Noxious_Trap = Class(function(self,inst)
     self.inst = inst
     self.explosiveRange = 4
-    self.explosiveDamage = 50
-    -- self.explosiveTime = 4
+    self.explosiveDamage = TEEMO_NOXIOUS_TRAP_DAMAGE
+    self.explosiveDotDamage = TEEMO_NOXIOUS_TRAP_DOT
+    self.deployer = nil
 end)
+
+function Explosive_Noxious_Trap:SetDeployer(deployer)
+    self.deployer = deployer
+end
 
 local function doEndTask(v)
 
@@ -12,24 +28,33 @@ local function doEndTask(v)
     end
 
     v.noxiousTrapEndTask = v:DoTaskInTime(4.0, function(v)
-        if v.components.locomotor ~= nil then
-            v.components.locomotor.bonusspeed = 0
+        if not v:IsValid() then return end
+        if v.components.locomotor ~= nil and v._noxiousTrapSlowAmount ~= nil then
+            v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) - v._noxiousTrapSlowAmount
+            v._noxiousTrapSlowAmount = nil
         end
         if v.noxiousTrapDamageTask ~= nil then
             v.noxiousTrapDamageTask:Cancel()
             v.noxiousTrapDamageTask = nil
         end
+        -- 毒マーク解除（他の毒DOTが残っていなければ）
+        TeemoPoison.unmarkTeemoPoisoned(v)
     end, v)
 end
 
 local function doSlow(v)
     if v.components.locomotor then
-        v.components.locomotor.bonusspeed = v.components.locomotor.runspeed * -0.5
+        -- 既にスロー中なら再加算しない（持続時間はdoEndTaskでリセット）
+        if v._noxiousTrapSlowAmount ~= nil then
+            return
+        end
+        local slowAmount = v.components.locomotor.runspeed * -0.5 -- 負の値をbonusspeedに加算して50%減速
+        v._noxiousTrapSlowAmount = slowAmount
+        v.components.locomotor.bonusspeed = (v.components.locomotor.bonusspeed or 0) + slowAmount
     end
 end
 
 local function toxicEffect(target)
-    -- 毒エフェクト
     local size = 1
     if target:HasTag("smallcreature") then
         size = 0
@@ -46,13 +71,19 @@ function Explosive_Noxious_Trap:OnBurnt()
 
     local x, y, z = self.inst.Transform:GetWorldPosition()
 
-    local counterList = TheSim:FindEntities(x, y, z, self.explosiveRange*5)
-    local counterPlayer = self.inst
-        for k, v in pairs(counterList) do
-        if v:HasTag("player") then
-            counterPlayer = v
-        break
+    -- 設置者を攻撃帰属先として使用。nilの場合は近くのteemoプレイヤーを探す
+    local counterPlayer = self.deployer
+    if counterPlayer == nil or not counterPlayer:IsValid() then
+        counterPlayer = nil
+        local counterList = TheSim:FindEntities(x, y, z, self.explosiveRange * 5, {"teemo"})
+        if #counterList > 0 then
+            counterPlayer = counterList[1]
         end
+    end
+
+    -- トラップ爆発時セリフ（30%確率、deployer経由）
+    if counterPlayer and counterPlayer.components.talker and math.random() < 0.3 then
+        counterPlayer.components.talker:Say(TRAP_EXPLODE_QUOTES[math.random(#TRAP_EXPLODE_QUOTES)])
     end
 
     -- playerは爆発対象外
@@ -66,46 +97,44 @@ function Explosive_Noxious_Trap:OnBurnt()
         -- アイテムは対象外
         local inpocket = v.components.inventoryitem and v.components.inventoryitem:IsHeld()
         if not inpocket then
-            if v.components.combat and v ~= self.inst then
+            -- 移動可能なクリーチャーのみ対象（壁・構造物には発動しない）
+            if v.components.combat and v.components.locomotor and v ~= self.inst then
 
-                if not v:HasTag(nonTarget) and not v:HasTag("companion") then --and v.entity:IsVisible() and not v:HasTag("notraptrigger") then
+                if not v:HasTag(nonTarget) and not v:HasTag("companion") then
 
-                    -- ダメージ
-                     -- v.components.combat:GetAttacked(counterPlayer, 1 , nil)
-                    -- ダメージモーション
-                    v:PushEvent("attacked", {attacker = counterPlayer, damage = self.explosiveDamage, weapon = nil})
+                    -- 毒による食料腐敗マーク（初撃で倒した場合にも対応するためGetAttackedの前に設定）
+                    if self.explosiveDotDamage > 0 then
+                        TeemoPoison.markTeemoPoisoned(v)
+                    end
 
-                    if v.components.health and v.noxiousTrapDamageTask == nil then
+                    -- 初撃ダメージ（GetAttackedで実ダメージ適用）
+                    v.components.combat:GetAttacked(counterPlayer, self.explosiveDamage, nil)
+                    TeemoShowDamageNumber(v, self.explosiveDamage, TEEMO_DMG_COLOUR_MAGIC)
 
-                        -- 毒の効果（1秒毎
+                    if v.components.health and v.noxiousTrapDamageTask == nil and self.explosiveDotDamage > 0 then
+
+                        local dotDamage = self.explosiveDotDamage
                         v.noxiousTrapDamageTask = v:DoPeriodicTask(1.0, function()
 
-                            -- ヘルスが無い場合は何もしない
-                            if v.components.health.currenthealth <= 0 then
+                            -- エンティティが無効 or ヘルスが無い場合はタスクをキャンセル
+                            if not v:IsValid() or v.components.health == nil or v.components.health.currenthealth <= 0 then
+                                if v.noxiousTrapDamageTask ~= nil then
+                                    v.noxiousTrapDamageTask:Cancel()
+                                    v.noxiousTrapDamageTask = nil
+                                end
                                 return
                             end
 
-                            -- 毒エフェクト
                             toxicEffect(v)
 
-                            -- ダメージ
-                            local dmg = self.explosiveDamage
-                            if v:HasTag("smallcreature") then
-                                dmg = self.explosiveDamage * 0.75
-                            end
-                            if v:HasTag("largecreature") then
-                                dmg = self.explosiveDamage * 1.75
-                            end
-                            if v:HasTag("monster") then
-                                dmg = self.explosiveDamage * 1.75
-                            end
+                            local dmg = dotDamage
                             if v:HasTag("player") then
-                                dmg = self.explosiveDamage * 0.35
+                                dmg = dotDamage * 0.3
                             end
 
                             v.components.health:DoDelta(-dmg, nil, "noxiousTrap")
-                            -- プレーヤーの場合画面が赤くなるやつ（PVP用)
-                            if v.HUD then v.HUD.bloodover:Flash() end
+                            TeemoShowDamageNumber(v, dmg, TEEMO_DMG_COLOUR_MAGIC)
+                            if v.HUD then v.HUD.bloodover:Flash() end -- 画面を赤くフラッシュ（被ダメージ演出）
 
                         end)
                     end
