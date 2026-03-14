@@ -179,18 +179,18 @@ local function onhit(inst, owner, target)
             end
         end
         -- 初撃のみ怯み、2撃目以降は怯みなし（LoL準拠: AAにスタンなし）
+        -- 構造物（locomotorなし）は怯みがないので毎回GetAttackedでOK
         local valid_attacker = attacker ~= nil and attacker:IsValid() and attacker or nil
-        if not target._teemo_dart_flinched then
+        if not target.components.locomotor or not target._teemo_dart_flinched then
             target._teemo_dart_flinched = true
             target.components.combat:GetAttacked(valid_attacker, damage, weapon)
         else
             if target.components.health then
                 target.components.health:DoDelta(-damage, nil, "blind_dart")
             end
-            -- アグロ + attackedイベント発火（蜂の巣等のリアクション用、怯みは発生しない）
+            -- アグロのみ付与（怯みは発生しない）
             if target.components.combat and valid_attacker then
                 target.components.combat:SetTarget(valid_attacker)
-                target:PushEvent("attacked", { attacker = valid_attacker, damage = damage, weapon = weapon })
             end
         end
 
