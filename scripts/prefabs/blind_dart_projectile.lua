@@ -187,9 +187,10 @@ local function onhit(inst, owner, target)
             if target.components.health then
                 target.components.health:DoDelta(-damage, nil, "blind_dart")
             end
-            -- アグロだけ付与（怯みは発生しない）
+            -- アグロ + attackedイベント発火（蜂の巣等のリアクション用、怯みは発生しない）
             if target.components.combat and valid_attacker then
                 target.components.combat:SetTarget(valid_attacker)
+                target:PushEvent("attacked", { attacker = valid_attacker, damage = damage, weapon = weapon })
             end
         end
 
@@ -203,11 +204,14 @@ local function onhit(inst, owner, target)
         if weapon._lastBlindTime == nil or now - weapon._lastBlindTime >= 10 then
             doBlind(target)
             weapon._lastBlindTime = now
-            if target.blindEffect ~= nil then
-                doBlindEffectEndTask(target)
-            else
-                doBlindEffect(target)
-                doBlindEffectEndTask(target)
+            -- 構造物（locomotorなし）にはブラインドエフェクトを表示しない
+            if target.components.locomotor then
+                if target.blindEffect ~= nil then
+                    doBlindEffectEndTask(target)
+                else
+                    doBlindEffect(target)
+                    doBlindEffectEndTask(target)
+                end
             end
         end
 
